@@ -31,7 +31,7 @@ async function addPoints(userId, amount) {
         VALUES ($1, $2, CURRENT_TIMESTAMP)
         ON CONFLICT (user_id)
         DO UPDATE SET
-            points = points.points + EXCLUDED.points,
+            points = points.points + $2,
             updated_at = CURRENT_TIMESTAMP
         RETURNING points;
         `,
@@ -48,11 +48,11 @@ async function removePoints(userId, amount) {
         VALUES ($1, $2, CURRENT_TIMESTAMP)
         ON CONFLICT (user_id)
         DO UPDATE SET
-            points = points.points + EXCLUDED.points,
+            points = points.points - $3,
             updated_at = CURRENT_TIMESTAMP
         RETURNING points;
         `,
-        [userId, -amount]
+        [userId, -amount, amount]
     );
 
     return result.rows[0].points;

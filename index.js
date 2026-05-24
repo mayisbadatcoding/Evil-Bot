@@ -6,7 +6,9 @@ const {
     Collection
 } = require("discord.js");
 
-const { initDatabase } = require("./utils/storage");
+const {
+    initDatabase
+} = require("./utils/storage");
 
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
@@ -25,9 +27,10 @@ client.commands.set("point add", addCommand);
 client.commands.set("point remove", removeCommand);
 client.commands.set("point checker", checkerCommand);
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
     try {
         await initDatabase();
+
         console.log("Database connected and ready.");
         console.log(`Logged in as ${client.user.tag}`);
     } catch (error) {
@@ -41,7 +44,10 @@ client.on("interactionCreate", async interaction => {
     if (interaction.commandName !== "point") return;
 
     const subcommand = interaction.options.getSubcommand();
-    const command = client.commands.get(`point ${subcommand}`);
+
+    const command = client.commands.get(
+        `point ${subcommand}`
+    );
 
     if (!command) {
         return interaction.reply({
@@ -53,19 +59,36 @@ client.on("interactionCreate", async interaction => {
     try {
         await command.execute(interaction);
     } catch (error) {
-        console.error(error);
+        console.error("COMMAND ERROR:", error);
 
-        const errorMessage = {
-            content: "There was an error while running this command.",
-            flags: 64
-        };
-
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp(errorMessage).catch(console.error);
-        } else {
-            await interaction.reply(errorMessage).catch(console.error);
+        try {
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({
+                    content: "There was an error while running this command.",
+                    flags: 64
+                });
+            } else {
+                await interaction.reply({
+                    content: "There was an error while running this command.",
+                    flags: 64
+                });
+            }
+        } catch (replyError) {
+            console.error("FAILED TO SEND ERROR RESPONSE:", replyError);
         }
     }
+});
+
+client.on("error", error => {
+    console.error("CLIENT ERROR:", error);
+});
+
+process.on("unhandledRejection", error => {
+    console.error("UNHANDLED PROMISE REJECTION:", error);
+});
+
+process.on("uncaughtException", error => {
+    console.error("UNCAUGHT EXCEPTION:", error);
 });
 
 client.login(process.env.TOKEN);
