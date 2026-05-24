@@ -5,7 +5,7 @@ const {
 
 const path = require("path");
 
-const { readPoints, savePoints } = require("../../utils/storage");
+const { removePoints } = require("../../utils/storage");
 const { canManagePoints } = require("../../utils/permissions");
 const { successEmbed, errorEmbed, logEmbed } = require("../../utils/embeds");
 
@@ -36,9 +36,7 @@ module.exports = {
     async execute(interaction) {
         if (!canManagePoints(interaction.member)) {
             return interaction.reply({
-                embeds: [
-                    errorEmbed("Permission Denied", "You cannot use this command.")
-                ],
+                embeds: [errorEmbed("Permission Denied", "You cannot use this command.")],
                 flags: 64
             });
         }
@@ -47,18 +45,11 @@ module.exports = {
         const amount = interaction.options.getInteger("amount");
         const reason = interaction.options.getString("reason");
 
-        const points = readPoints();
-
-        if (!points[user.id]) {
-            points[user.id] = 0;
-        }
-
-        points[user.id] = Math.max(points[user.id] - amount, 0);
-        savePoints(points);
+        const totalPoints = await removePoints(user.id, amount);
 
         const replyEmbed = successEmbed(
             "Points Removed",
-            `Removed **${amount}** point(s) from ${user}.\n\nThey now have **${points[user.id]}** point(s).`
+            `Removed **${amount}** point(s) from ${user}.\n\nThey now have **${totalPoints}** point(s).`
         );
 
         await interaction.reply({
@@ -71,13 +62,18 @@ module.exports = {
 
         const dmEmbed = errorEmbed(
             "we've stolen your points!!!",
-            `You lost **${amount}** point(s).\n\nReason: **${reason}**\n\nYou now have **${points[user.id]}** point(s). THESE POINTS GO TO MAY!!!`
+            `You lost **${amount}** point(s).\n\nReason: **${reason}**\n\nYou now have **${totalPoints}** point(s). THESE POINTS GO TO MAY!!!`
         ).setImage("attachment://whywhywhy.gif");
+
+        let dmStatus = "Sent";
 
         await user.send({
             embeds: [dmEmbed],
             files: [attachment]
-        }).catch(console.error);
+        }).catch(error => {
+            dmStatus = `Failed: ${error.message}`;
+            console.error("DM failed:", error);
+        });
 
         const logChannel = interaction.client.channels.cache.get(
             process.env.POINT_LOG_CHANNEL
@@ -96,12 +92,16 @@ module.exports = {
                 },
                 {
                     name: "Total Points",
-                    value: `${points[user.id]}`,
+                    value: `${totalPoints}`,
                     inline: true
                 },
                 {
                     name: "Person who TAKETH AWAY!",
                     value: `${interaction.user}`
+                },
+                {
+                    name: "DM Status",
+                    value: dmStatus
                 },
                 {
                     name: "Reason",

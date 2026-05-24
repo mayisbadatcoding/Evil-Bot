@@ -6,6 +6,8 @@ const {
     Collection
 } = require("discord.js");
 
+const { initDatabase } = require("./utils/storage");
+
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
 const checkerCommand = require("./commands/point/checker");
@@ -23,40 +25,45 @@ client.commands.set("point add", addCommand);
 client.commands.set("point remove", removeCommand);
 client.commands.set("point checker", checkerCommand);
 
-client.once("ready", () => {
-    console.log(`Logged in as ${client.user.tag}`);
+client.once("ready", async () => {
+    try {
+        await initDatabase();
+        console.log("Database connected and ready.");
+        console.log(`Logged in as ${client.user.tag}`);
+    } catch (error) {
+        console.error("Database failed to initialize:", error);
+    }
 });
 
 client.on("interactionCreate", async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    if (interaction.commandName === "point") {
-        const subcommand = interaction.options.getSubcommand();
-        const command = client.commands.get(`point ${subcommand}`);
+    if (interaction.commandName !== "point") return;
 
-        if (!command) {
-            return interaction.reply({
-                content: "That command does not exist.",
-                ephemeral: true
-            });
-        }
+    const subcommand = interaction.options.getSubcommand();
+    const command = client.commands.get(`point ${subcommand}`);
 
-        try {
-            await command.execute(interaction);
-        } catch (error) {
-            console.error(error);
+    if (!command) {
+        return interaction.reply({
+            content: "That command does not exist.",
+            flags: 64
+        });
+    }
 
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({
-                    content: "There was an error while running this command.",
-                    ephemeral: true
-                });
-            } else {
-                await interaction.reply({
-                    content: "There was an error while running this command.",
-                    ephemeral: true
-                });
-            }
+    try {
+        await command.execute(interaction);
+    } catch (error) {
+        console.error(error);
+
+        const errorMessage = {
+            content: "There was an error while running this command.",
+            flags: 64
+        };
+
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(errorMessage).catch(console.error);
+        } else {
+            await interaction.reply(errorMessage).catch(console.error);
         }
     }
 });

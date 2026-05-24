@@ -5,7 +5,7 @@ const {
 
 const path = require("path");
 
-const { readPoints } = require("../../utils/storage");
+const { getPoints } = require("../../utils/storage");
 const { successEmbed } = require("../../utils/embeds");
 
 module.exports = {
@@ -23,8 +23,7 @@ module.exports = {
         await interaction.deferReply();
 
         const user = interaction.options.getUser("user");
-        const points = readPoints();
-        const userPoints = points[user.id] || 0;
+        const userPoints = await getPoints(user.id);
 
         const attachment = new AttachmentBuilder(
             path.join(__dirname, "../../assets/smug.gif")
