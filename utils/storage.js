@@ -45,14 +45,14 @@ async function removePoints(userId, amount) {
     const result = await pool.query(
         `
         INSERT INTO points (user_id, points, updated_at)
-        VALUES ($1, -$2, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, CURRENT_TIMESTAMP)
         ON CONFLICT (user_id)
         DO UPDATE SET
-            points = points.points - $2,
+            points = points.points + EXCLUDED.points,
             updated_at = CURRENT_TIMESTAMP
         RETURNING points;
         `,
-        [userId, amount]
+        [userId, -amount]
     );
 
     return result.rows[0].points;
