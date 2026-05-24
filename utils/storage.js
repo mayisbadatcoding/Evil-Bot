@@ -25,37 +25,41 @@ async function getPoints(userId) {
 }
 
 async function addPoints(userId, amount) {
-    const result = await pool.query(
+    const currentPoints = await getPoints(userId);
+    const newPoints = currentPoints + amount;
+
+    await pool.query(
         `
         INSERT INTO points (user_id, points, updated_at)
         VALUES ($1, $2, CURRENT_TIMESTAMP)
         ON CONFLICT (user_id)
         DO UPDATE SET
-            points = points.points + $2,
-            updated_at = CURRENT_TIMESTAMP
-        RETURNING points;
+            points = $2,
+            updated_at = CURRENT_TIMESTAMP;
         `,
-        [userId, amount]
+        [userId, newPoints]
     );
 
-    return result.rows[0].points;
+    return newPoints;
 }
 
 async function removePoints(userId, amount) {
-    const result = await pool.query(
+    const currentPoints = await getPoints(userId);
+    const newPoints = currentPoints - amount;
+
+    await pool.query(
         `
         INSERT INTO points (user_id, points, updated_at)
         VALUES ($1, $2, CURRENT_TIMESTAMP)
         ON CONFLICT (user_id)
         DO UPDATE SET
-            points = points.points - $3,
-            updated_at = CURRENT_TIMESTAMP
-        RETURNING points;
+            points = $2,
+            updated_at = CURRENT_TIMESTAMP;
         `,
-        [userId, -amount, amount]
+        [userId, newPoints]
     );
 
-    return result.rows[0].points;
+    return newPoints;
 }
 
 module.exports = {
