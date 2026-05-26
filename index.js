@@ -20,8 +20,8 @@ const unmuteCommand = require("./commands/moderation/unmute");
 const warnCommand = require("./commands/moderation/warn");
 const warningsCommand = require("./commands/moderation/warnings");
 
-const clankerCommand = require("./Funny Commands/clanker");
-const fuckyouCommand = require("./Funny Commands/fuckyou");
+const clankerCommand = require("./commands/Funny Commands/clanker");
+const fuckyouCommand = require("./commands/Funny Commands/fuckyou");
 
 const client = new Client({
     intents: [
