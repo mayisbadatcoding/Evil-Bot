@@ -13,6 +13,26 @@ async function initDatabase() {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS funny_command_logs (
+            id SERIAL PRIMARY KEY,
+            command_name TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            username TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS warnings (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            moderator_id TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
 }
 
 async function getPoints(userId) {
@@ -62,9 +82,63 @@ async function removePoints(userId, amount) {
     return newPoints;
 }
 
+async function logFunnyCommand(commandName, user) {
+    await pool.query(
+        `
+        INSERT INTO funny_command_logs (command_name, user_id, username)
+        VALUES ($1, $2, $3);
+        `,
+        [commandName, user.id, user.tag]
+    );
+}
+
+async function addWarning(userId, moderatorId, reason) {
+    const result = await pool.query(
+        `
+        INSERT INTO warnings (user_id, moderator_id, reason)
+        VALUES ($1, $2, $3)
+        RETURNING id, user_id, moderator_id, reason, created_at;
+        `,
+        [userId, moderatorId, reason]
+    );
+
+    return result.rows[0];
+}
+
+async function getWarnings(userId) {
+    const result = await pool.query(
+        `
+        SELECT id, user_id, moderator_id, reason, created_at
+        FROM warnings
+        WHERE user_id = $1
+        ORDER BY created_at DESC;
+        `,
+        [userId]
+    );
+
+    return result.rows;
+}
+
+async function clearWarnings(userId) {
+    const result = await pool.query(
+        `
+        DELETE FROM warnings
+        WHERE user_id = $1
+        RETURNING id;
+        `,
+        [userId]
+    );
+
+    return result.rowCount;
+}
+
 module.exports = {
     initDatabase,
     getPoints,
     addPoints,
-    removePoints
+    removePoints,
+    logFunnyCommand,
+    addWarning,
+    getWarnings,
+    clearWarnings
 };
