@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require("discord.js");
 
 const {
     logFunnyCommand
-} = require("../utils/storage");
+} = require("../../utils/storage");
 
 module.exports = {
     data: new SlashCommandBuilder()
