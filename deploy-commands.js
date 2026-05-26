@@ -1,6 +1,10 @@
 require("dotenv").config();
 
-const { REST, Routes, SlashCommandBuilder } = require("discord.js");
+const {
+    REST,
+    Routes,
+    SlashCommandBuilder
+} = require("discord.js");
 
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
@@ -39,7 +43,9 @@ const commands = [
     fuckyouCommand.data.toJSON()
 ];
 
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+const rest = new REST({
+    version: "10"
+}).setToken(process.env.TOKEN);
 
 (async () => {
     try {
@@ -50,7 +56,9 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
                 process.env.CLIENT_ID,
                 process.env.GUILD_ID
             ),
-            { body: commands }
+            {
+                body: commands
+            }
         );
 
         console.log("Successfully registered slash commands.");
