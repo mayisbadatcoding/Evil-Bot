@@ -21,6 +21,14 @@ const warningsCommand = require("./commands/moderation/warnings");
 const clankerCommand = require("./commands/Funny Commands/clanker");
 const fuckyouCommand = require("./commands/Funny Commands/fuckyou");
 
+const pingCommand = require("./commands/utility/ping");
+const eightBallCommand = require("./commands/utility/8ball");
+const statusCommand = require("./commands/utility/status");
+const maintenanceCommand = require("./commands/utility/maintenance");
+const evalCommand = require("./commands/utility/eval");
+const reloadCommand = require("./commands/utility/reload");
+const restartCommand = require("./commands/utility/restart");
+
 const pointCommand = new SlashCommandBuilder()
     .setName("point")
     .setDescription("Point management commands.")
@@ -40,7 +48,15 @@ const commands = [
     warningsCommand.data.toJSON(),
 
     clankerCommand.data.toJSON(),
-    fuckyouCommand.data.toJSON()
+    fuckyouCommand.data.toJSON(),
+
+    pingCommand.data.toJSON(),
+    eightBallCommand.data.toJSON(),
+    statusCommand.data.toJSON(),
+    maintenanceCommand.data.toJSON(),
+    evalCommand.data.toJSON(),
+    reloadCommand.data.toJSON(),
+    restartCommand.data.toJSON()
 ];
 
 const rest = new REST({

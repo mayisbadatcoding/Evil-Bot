@@ -23,6 +23,14 @@ const warningsCommand = require("./commands/moderation/warnings");
 const clankerCommand = require("./commands/Funny Commands/clanker");
 const fuckyouCommand = require("./commands/Funny Commands/fuckyou");
 
+const pingCommand = require("./commands/utility/ping");
+const eightBallCommand = require("./commands/utility/8ball");
+const statusCommand = require("./commands/utility/status");
+const maintenanceCommand = require("./commands/utility/maintenance");
+const evalCommand = require("./commands/utility/eval");
+const reloadCommand = require("./commands/utility/reload");
+const restartCommand = require("./commands/utility/restart");
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -47,6 +55,14 @@ client.commands.set("warnings", warningsCommand);
 
 client.commands.set("clanker", clankerCommand);
 client.commands.set("fuckyou", fuckyouCommand);
+
+client.commands.set("ping", pingCommand);
+client.commands.set("8ball", eightBallCommand);
+client.commands.set("status", statusCommand);
+client.commands.set("maintenance", maintenanceCommand);
+client.commands.set("eval", evalCommand);
+client.commands.set("reload", reloadCommand);
+client.commands.set("restart", restartCommand);
 
 client.once("clientReady", async () => {
     try {
@@ -74,6 +90,16 @@ client.on("interactionCreate", async interaction => {
     if (!command) {
         return interaction.reply({
             content: "That command does not exist.",
+            flags: 64
+        });
+    }
+
+    if (
+        global.maintenanceMode &&
+        !["maintenance", "status", "restart"].includes(interaction.commandName)
+    ) {
+        return interaction.reply({
+            content: "The bot is currently in maintenance mode.",
             flags: 64
         });
     }
