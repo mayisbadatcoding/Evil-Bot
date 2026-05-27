@@ -16,7 +16,10 @@ const responses = [
     "The voices say no.",
     "Signs point to yes.",
     "Very unlikely.",
-    "I think so."
+    "I'm going to kill you.",
+    "Fuck you.",
+    "You're too evil.",
+    "You're slow.",
 ];
 
 module.exports = {
