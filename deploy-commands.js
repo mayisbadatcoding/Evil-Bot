@@ -20,6 +20,7 @@ const warningsCommand = require("./commands/moderation/warnings");
 
 const clankerCommand = require("./commands/Funny Commands/clanker");
 const fuckyouCommand = require("./commands/Funny Commands/fuckyou");
+const silenceCommand = require("./commands/Funny Commands/silence");
 
 const pingCommand = require("./commands/utility/ping");
 const eightBallCommand = require("./commands/utility/8ball");
@@ -49,6 +50,7 @@ const commands = [
 
     clankerCommand.data.toJSON(),
     fuckyouCommand.data.toJSON(),
+    silenceCommand.data.toJSON(),
 
     pingCommand.data.toJSON(),
     eightBallCommand.data.toJSON(),

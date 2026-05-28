@@ -22,6 +22,7 @@ const warningsCommand = require("./commands/moderation/warnings");
 
 const clankerCommand = require("./commands/Funny Commands/clanker");
 const fuckyouCommand = require("./commands/Funny Commands/fuckyou");
+const silenceCommand = require("./commands/Funny Commands/silence");
 
 const pingCommand = require("./commands/utility/ping");
 const eightBallCommand = require("./commands/utility/8ball");
@@ -55,6 +56,7 @@ client.commands.set("warnings", warningsCommand);
 
 client.commands.set("clanker", clankerCommand);
 client.commands.set("fuckyou", fuckyouCommand);
+client.commands.set("silence", silenceCommand);
 
 client.commands.set("ping", pingCommand);
 client.commands.set("8ball", eightBallCommand);
