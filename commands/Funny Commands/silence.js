@@ -22,7 +22,7 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        if (interaction.user.id !== OWNER_ID) {
+        if (!OWNER_IDS.includes(interaction.user.id)) {
             return interaction.reply({
                 content: "You cannot use this command.",
                 flags: 64
