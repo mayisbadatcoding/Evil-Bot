@@ -2,7 +2,10 @@ const {
     SlashCommandBuilder
 } = require("discord.js");
 
-const OWNER_ID = "1092162323021566103";
+const OWNER_IDS = [
+    "845446699429658624",
+    "862405092111548417"
+];
 
 module.exports = {
     data: new SlashCommandBuilder()
