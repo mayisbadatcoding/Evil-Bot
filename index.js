@@ -3,10 +3,23 @@ require("dotenv").config();
 const {
     Client,
     GatewayIntentBits,
-    Collection
+    Collection,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    EmbedBuilder
 } = require("discord.js");
 
-const { initDatabase } = require("./utils/storage");
+const {
+    initDatabase,
+    isBugReportBanned,
+    banBugReporter
+} = require("./utils/storage");
+
+const { loginRoblox } = require("./utils/robloxVerify");
 
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
@@ -31,6 +44,11 @@ const maintenanceCommand = require("./commands/utility/maintenance");
 const evalCommand = require("./commands/utility/eval");
 const reloadCommand = require("./commands/utility/reload");
 const restartCommand = require("./commands/utility/restart");
+
+const verifyCommand = require("./commands/verification/verify");
+const verifyAllCommand = require("./commands/verification/verifyall");
+
+const guildMemberAddEvent = require("./events/guildMemberAdd");
 
 const client = new Client({
     intents: [
@@ -66,65 +84,217 @@ client.commands.set("eval", evalCommand);
 client.commands.set("reload", reloadCommand);
 client.commands.set("restart", restartCommand);
 
+client.commands.set("verify", verifyCommand);
+client.commands.set("verifyall", verifyAllCommand);
+
 client.once("clientReady", async () => {
     try {
         await initDatabase();
+        await loginRoblox();
 
         console.log("Database connected and ready.");
+        console.log("Roblox connected and ready.");
         console.log(`Logged in as ${client.user.tag}`);
     } catch (error) {
-        console.error("Database failed to initialize:", error);
+        console.error("Startup failed:", error);
     }
 });
 
+client.on("guildMemberAdd", async member => {
+    await guildMemberAddEvent.execute(member);
+});
+
 client.on("interactionCreate", async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-
-    let command;
-
-    if (interaction.commandName === "point") {
-        const subcommand = interaction.options.getSubcommand();
-        command = client.commands.get(`point ${subcommand}`);
-    } else {
-        command = client.commands.get(interaction.commandName);
-    }
-
-    if (!command) {
-        return interaction.reply({
-            content: "That command does not exist.",
-            flags: 64
-        });
-    }
-
-    if (
-        global.maintenanceMode &&
-        !["maintenance", "status", "restart"].includes(interaction.commandName)
-    ) {
-        return interaction.reply({
-            content: "The bot is currently in maintenance mode.",
-            flags: 64
-        });
-    }
-
     try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error("COMMAND ERROR:", error);
+        if (interaction.isButton()) {
+            if (interaction.customId === "open_bug_report") {
+                const banned = await isBugReportBanned(interaction.user.id);
 
-        try {
-            if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({
-                    content: "There was an error while running this command.",
-                    flags: 64
+                if (banned) {
+                    return interaction.reply({
+                        content: "You are banned from using the verification bug report system.",
+                        flags: 64
+                    });
+                }
+
+                const modal = new ModalBuilder()
+                    .setCustomId("verify_bug_report_modal")
+                    .setTitle("Verification Bug Report");
+
+                const robloxUsernameInput = new TextInputBuilder()
+                    .setCustomId("roblox_username")
+                    .setLabel("Your Roblox username")
+                    .setStyle(TextInputStyle.Short)
+                    .setRequired(true);
+
+                const issueInput = new TextInputBuilder()
+                    .setCustomId("issue")
+                    .setLabel("What went wrong?")
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true);
+
+                modal.addComponents(
+                    new ActionRowBuilder().addComponents(robloxUsernameInput),
+                    new ActionRowBuilder().addComponents(issueInput)
+                );
+
+                return interaction.showModal(modal);
+            }
+
+            if (interaction.customId.startsWith("bug_disregard_")) {
+                const userId = interaction.customId.replace("bug_disregard_", "");
+
+                await interaction.update({
+                    content: `Bug report from <@${userId}> was disregarded by ${interaction.user}.`,
+                    components: []
                 });
-            } else {
-                await interaction.reply({
-                    content: "There was an error while running this command.",
+
+                return;
+            }
+
+            if (interaction.customId.startsWith("bug_accept_")) {
+                const userId = interaction.customId.replace("bug_accept_", "");
+
+                const user = await interaction.client.users.fetch(userId).catch(() => null);
+
+                if (user) {
+                    await user.send(
+                        "Your verification bug report was accepted. Staff will manually role you soon."
+                    ).catch(() => {});
+                }
+
+                await interaction.update({
+                    content: `Bug report from <@${userId}> was accepted by ${interaction.user}.`,
+                    components: []
+                });
+
+                return;
+            }
+
+            if (interaction.customId.startsWith("bug_ban_")) {
+                const userId = interaction.customId.replace("bug_ban_", "");
+
+                await banBugReporter(userId);
+
+                const user = await interaction.client.users.fetch(userId).catch(() => null);
+
+                if (user) {
+                    await user.send(
+                        "You have been banned from using the verification bug report system."
+                    ).catch(() => {});
+                }
+
+                await interaction.update({
+                    content: `<@${userId}> was banned from verification bug reports by ${interaction.user}.`,
+                    components: []
+                });
+
+                return;
+            }
+        }
+
+        if (interaction.isModalSubmit()) {
+            if (interaction.customId === "verify_bug_report_modal") {
+                const robloxUsername = interaction.fields.getTextInputValue("roblox_username");
+                const issue = interaction.fields.getTextInputValue("issue");
+
+                const guild = await interaction.client.guilds.fetch(
+                    process.env.BUG_REPORT_SERVER_ID
+                );
+
+                const channel = await guild.channels.fetch(
+                    process.env.BUG_REPORT_CHANNEL_ID
+                );
+
+                const embed = new EmbedBuilder()
+                    .setTitle("Verification Bug Report")
+                    .setColor(0xffcc00)
+                    .addFields(
+                        {
+                            name: "Discord User",
+                            value: `${interaction.user} (\`${interaction.user.id}\`)`
+                        },
+                        {
+                            name: "Roblox Username",
+                            value: robloxUsername
+                        },
+                        {
+                            name: "Issue",
+                            value: issue
+                        }
+                    )
+                    .setTimestamp();
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`bug_disregard_${interaction.user.id}`)
+                        .setLabel("Disregard")
+                        .setStyle(ButtonStyle.Secondary),
+
+                    new ButtonBuilder()
+                        .setCustomId(`bug_accept_${interaction.user.id}`)
+                        .setLabel("Accept as Real Bug")
+                        .setStyle(ButtonStyle.Success),
+
+                    new ButtonBuilder()
+                        .setCustomId(`bug_ban_${interaction.user.id}`)
+                        .setLabel("Ban From Reports")
+                        .setStyle(ButtonStyle.Danger)
+                );
+
+                await channel.send({
+                    embeds: [embed],
+                    components: [row]
+                });
+
+                return interaction.reply({
+                    content: "Your bug report has been sent to staff.",
                     flags: 64
                 });
             }
-        } catch (replyError) {
-            console.error("FAILED TO SEND ERROR RESPONSE:", replyError);
+        }
+
+        if (!interaction.isChatInputCommand()) return;
+
+        let command;
+
+        if (interaction.commandName === "point") {
+            const subcommand = interaction.options.getSubcommand();
+            command = client.commands.get(`point ${subcommand}`);
+        } else {
+            command = client.commands.get(interaction.commandName);
+        }
+
+        if (!command) {
+            return interaction.reply({
+                content: "That command does not exist.",
+                flags: 64
+            });
+        }
+
+        if (
+            global.maintenanceMode &&
+            !["maintenance", "status", "restart"].includes(interaction.commandName)
+        ) {
+            return interaction.reply({
+                content: "The bot is currently in maintenance mode.",
+                flags: 64
+            });
+        }
+
+        await command.execute(interaction);
+    } catch (error) {
+        console.error("INTERACTION ERROR:", error);
+
+        const errorReply = {
+            content: "There was an error while running this interaction.",
+            flags: 64
+        };
+
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(errorReply).catch(console.error);
+        } else {
+            await interaction.reply(errorReply).catch(console.error);
         }
     }
 });

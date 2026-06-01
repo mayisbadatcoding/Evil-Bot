@@ -30,6 +30,9 @@ const evalCommand = require("./commands/utility/eval");
 const reloadCommand = require("./commands/utility/reload");
 const restartCommand = require("./commands/utility/restart");
 
+const verifyCommand = require("./commands/verification/verify");
+const verifyAllCommand = require("./commands/verification/verifyall");
+
 const pointCommand = new SlashCommandBuilder()
     .setName("point")
     .setDescription("Point management commands.")
@@ -58,12 +61,13 @@ const commands = [
     maintenanceCommand.data.toJSON(),
     evalCommand.data.toJSON(),
     reloadCommand.data.toJSON(),
-    restartCommand.data.toJSON()
+    restartCommand.data.toJSON(),
+
+    verifyCommand.data.toJSON(),
+    verifyAllCommand.data.toJSON()
 ];
 
-const rest = new REST({
-    version: "10"
-}).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
 (async () => {
     try {
@@ -74,9 +78,7 @@ const rest = new REST({
                 process.env.CLIENT_ID,
                 process.env.GUILD_ID
             ),
-            {
-                body: commands
-            }
+            { body: commands }
         );
 
         console.log("Successfully registered slash commands.");

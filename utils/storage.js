@@ -33,6 +33,13 @@ async function initDatabase() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS bug_report_bans (
+            user_id TEXT PRIMARY KEY,
+            banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
 }
 
 async function getPoints(userId) {
@@ -132,13 +139,39 @@ async function clearWarnings(userId) {
     return result.rowCount;
 }
 
+async function isBugReportBanned(userId) {
+    const result = await pool.query(
+        "SELECT user_id FROM bug_report_bans WHERE user_id = $1",
+        [userId]
+    );
+
+    return result.rows.length > 0;
+}
+
+async function banBugReporter(userId) {
+    await pool.query(
+        `
+        INSERT INTO bug_report_bans (user_id)
+        VALUES ($1)
+        ON CONFLICT (user_id) DO NOTHING;
+        `,
+        [userId]
+    );
+}
+
 module.exports = {
     initDatabase,
+
     getPoints,
     addPoints,
     removePoints,
+
     logFunnyCommand,
+
     addWarning,
     getWarnings,
-    clearWarnings
+    clearWarnings,
+
+    isBugReportBanned,
+    banBugReporter
 };
