@@ -8,7 +8,8 @@ const {
 const {
     getRobloxUserId,
     getUserRank,
-    getDiscordRoleFromRank
+    getDiscordRoleFromRank,
+    getRobloxDescription
 } = require("../../utils/robloxVerify");
 
 module.exports = {
@@ -32,15 +33,29 @@ module.exports = {
 
         let robloxUserId;
         let rank;
+        let description;
 
         try {
             robloxUserId = await getRobloxUserId(username);
             rank = await getUserRank(robloxUserId);
+            description = await getRobloxDescription(robloxUserId);
         } catch (error) {
             console.error("Roblox verification lookup failed:", error);
 
             return interaction.editReply({
                 content: "I could not find or check that Roblox account."
+            });
+        }
+
+        const verificationCode = `EVIL-VERIFY-${interaction.user.id}`;
+
+        if (!description.includes(verificationCode)) {
+            return interaction.editReply({
+                content:
+                    `To prove this is your Roblox account, put this exact code in your Roblox profile/About section:\n\n` +
+                    `\`${verificationCode}\`\n\n` +
+                    `Then run this command again:\n` +
+                    `\`/verify username:${username}\``
             });
         }
 
@@ -56,7 +71,7 @@ module.exports = {
 
             await interaction.user.send({
                 content:
-                    `You are not in the Roblox group or do not have a supported rank.\n\n` +
+                    `You proved ownership of **${username}**, but you are not in the Roblox group or do not have a supported rank.\n\n` +
                     `Join here: https://www.roblox.com/groups/${process.env.ROBLOX_GROUP_ID}\n\n` +
                     `If you believe this is a bug, click the button below.`,
                 components: [row]
@@ -64,7 +79,7 @@ module.exports = {
 
             return interaction.editReply({
                 content:
-                    "You are not in the Roblox group or do not have a supported rank. I DMed you instructions."
+                    "You proved ownership, but you are not in the Roblox group or do not have a supported rank. I DMed you instructions."
             });
         }
 

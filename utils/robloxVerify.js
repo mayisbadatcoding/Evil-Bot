@@ -21,8 +21,7 @@ async function loginRoblox() {
 }
 
 async function getRobloxUserId(username) {
-    const userId = await noblox.getIdFromUsername(username);
-    return userId;
+    return await noblox.getIdFromUsername(username);
 }
 
 async function getUserRank(userId) {
@@ -33,9 +32,15 @@ function getDiscordRoleFromRank(rank) {
     return RANK_TO_DISCORD_ROLE[rank] || null;
 }
 
+async function getRobloxDescription(userId) {
+    const info = await noblox.getPlayerInfo(userId);
+    return info.blurb || "";
+}
+
 module.exports = {
     loginRoblox,
     getRobloxUserId,
     getUserRank,
-    getDiscordRoleFromRank
+    getDiscordRoleFromRank,
+    getRobloxDescription
 };
