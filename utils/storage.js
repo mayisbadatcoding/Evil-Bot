@@ -7,6 +7,23 @@ const pool = new Pool({
 
 async function initDatabase() {
     await pool.query(`
+    CREATE TABLE IF NOT EXISTS oauth_states (
+        state TEXT PRIMARY KEY,
+        discord_user_id TEXT NOT NULL,
+        guild_id TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+`);
+
+await pool.query(`
+    CREATE TABLE IF NOT EXISTS roblox_links (
+        discord_user_id TEXT PRIMARY KEY,
+        roblox_user_id TEXT NOT NULL,
+        roblox_username TEXT NOT NULL,
+        linked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+`);
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS points (
             user_id TEXT PRIMARY KEY,
             points INTEGER NOT NULL DEFAULT 0,
@@ -159,7 +176,56 @@ async function banBugReporter(userId) {
     );
 }
 
+async function saveOAuthState(state, discordUserId, guildId) {
+    await pool.query(
+        `
+        INSERT INTO oauth_states (state, discord_user_id, guild_id)
+        VALUES ($1, $2, $3);
+        `,
+        [state, discordUserId, guildId]
+    );
+}
+
+async function getOAuthState(state) {
+    const result = await pool.query(
+        `
+        SELECT state, discord_user_id, guild_id
+        FROM oauth_states
+        WHERE state = $1;
+        `,
+        [state]
+    );
+
+    return result.rows[0] || null;
+}
+
+async function deleteOAuthState(state) {
+    await pool.query(
+        "DELETE FROM oauth_states WHERE state = $1;",
+        [state]
+    );
+}
+
+async function linkRobloxAccount(discordUserId, robloxUserId, robloxUsername) {
+    await pool.query(
+        `
+        INSERT INTO roblox_links (discord_user_id, roblox_user_id, roblox_username, linked_at)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        ON CONFLICT (discord_user_id)
+        DO UPDATE SET
+            roblox_user_id = $2,
+            roblox_username = $3,
+            linked_at = CURRENT_TIMESTAMP;
+        `,
+        [discordUserId, robloxUserId, robloxUsername]
+    );
+}
+
 module.exports = {
+    saveOAuthState,
+getOAuthState,
+deleteOAuthState,
+linkRobloxAccount,
     initDatabase,
 
     getPoints,

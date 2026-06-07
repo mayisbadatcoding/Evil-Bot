@@ -50,6 +50,8 @@ const verifyAllCommand = require("./commands/verification/verifyall");
 
 const guildMemberAddEvent = require("./events/guildMemberAdd");
 
+const { startOAuthServer } = require("./utils/oauthServer");
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -91,6 +93,7 @@ client.once("clientReady", async () => {
     try {
         await initDatabase();
         await loginRoblox();
+        startOAuthServer(client);
 
         console.log("Database connected and ready.");
         console.log("Roblox connected and ready.");
