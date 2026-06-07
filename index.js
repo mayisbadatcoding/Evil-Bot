@@ -19,8 +19,6 @@ const {
     banBugReporter
 } = require("./utils/storage");
 
-const { loginRoblox } = require("./utils/robloxVerify");
-
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
 const checkerCommand = require("./commands/point/checker");
@@ -92,7 +90,6 @@ client.commands.set("verifyall", verifyAllCommand);
 client.once("clientReady", async () => {
     try {
         await initDatabase();
-        await loginRoblox();
         startOAuthServer(client);
 
         console.log("Database connected and ready.");
