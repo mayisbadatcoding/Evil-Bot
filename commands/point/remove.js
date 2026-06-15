@@ -45,7 +45,7 @@ module.exports = {
         const amount = interaction.options.getInteger("amount");
         const reason = interaction.options.getString("reason");
 
-        const totalPoints = await removePoints(user.id, amount);
+        const totalPoints = await removePoints(user.id, user.tag, amount);
 
         const replyEmbed = successEmbed(
             "Points Removed",

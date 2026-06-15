@@ -22,7 +22,13 @@ module.exports = {
         const user = interaction.options.getUser("user");
         const reason = interaction.options.getString("reason");
 
-        const warning = await addWarning(user.id, interaction.user.id, reason);
+        const warning = await addWarning(
+    user.id,
+    user.tag,
+    interaction.user.id,
+    interaction.user.tag,
+    reason
+);
 
         await interaction.reply({
             embeds: [successEmbed("User Warned", `${user} has been warned.\n\n**Reason:** ${reason}`)]

@@ -30,7 +30,7 @@ module.exports = {
         );
 
         const embed = successEmbed(
-            "IM SORRY WES IM SORRY WES",
+            "You... are quantum!",
             `${user} currently has **${userPoints}** point(s).`
         ).setImage("attachment://smug.gif");
 

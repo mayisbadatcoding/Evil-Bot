@@ -23,6 +23,9 @@ const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
 const checkerCommand = require("./commands/point/checker");
 
+const prereleaseCommand = require("./commands/prerelease/prerelease");
+const customRoleCommand = require("./commands/fun/customrole");
+
 const banCommand = require("./commands/moderation/ban");
 const clearWarningsCommand = require("./commands/moderation/clearwarnings");
 const muteCommand = require("./commands/moderation/mute");
@@ -42,11 +45,27 @@ const maintenanceCommand = require("./commands/utility/maintenance");
 const evalCommand = require("./commands/utility/eval");
 const reloadCommand = require("./commands/utility/reload");
 const restartCommand = require("./commands/utility/restart");
+const playCommand = require("./commands/music/play");
+const skipCommand = require("./commands/music/skip");
+const stopCommand = require("./commands/music/stop");
+const pauseCommand = require("./commands/music/pause");
+const resumeCommand = require("./commands/music/resume");
+const queueCommand = require("./commands/music/queue");
+const nowPlayingCommand = require("./commands/music/nowplaying");
+const volumeCommand = require("./commands/music/volume");
+const shuffleCommand = require("./commands/music/shuffle");
+const loopCommand = require("./commands/music/loop");
+const loopQueueCommand = require("./commands/music/loopqueue");
+const musicRemoveCommand = require("./commands/music/remove");
+const jumpCommand = require("./commands/music/jump");
+const autoplayCommand = require("./commands/music/autoplay");
 
 const verifyCommand = require("./commands/verification/verify");
 const verifyAllCommand = require("./commands/verification/verifyall");
 
 const guildMemberAddEvent = require("./events/guildMemberAdd");
+
+const { setupMusicPlayer } = require("./utils/musicPlayer");
 
 const { startOAuthServer } = require("./utils/oauthServer");
 
@@ -54,15 +73,35 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildModeration
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildVoiceStates
     ]
 });
+setupMusicPlayer(client);
 
 client.commands = new Collection();
 
 client.commands.set("point add", addCommand);
 client.commands.set("point remove", removeCommand);
 client.commands.set("point checker", checkerCommand);
+
+client.commands.set("prerelease", prereleaseCommand);
+client.commands.set("customrole", customRoleCommand);
+
+client.commands.set("play", playCommand);
+client.commands.set("skip", skipCommand);
+client.commands.set("stop", stopCommand);
+client.commands.set("pause", pauseCommand);
+client.commands.set("resume", resumeCommand);
+client.commands.set("queue", queueCommand);
+client.commands.set("nowplaying", nowPlayingCommand);
+client.commands.set("volume", volumeCommand);
+client.commands.set("shuffle", shuffleCommand);
+client.commands.set("loop", loopCommand);
+client.commands.set("loopqueue", loopQueueCommand);
+client.commands.set("remove", musicRemoveCommand);
+client.commands.set("jump", jumpCommand);
+client.commands.set("autoplay", autoplayCommand);
 
 client.commands.set("ban", banCommand);
 client.commands.set("clearwarnings", clearWarningsCommand);

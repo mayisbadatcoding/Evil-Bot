@@ -33,6 +33,24 @@ const restartCommand = require("./commands/utility/restart");
 const verifyCommand = require("./commands/verification/verify");
 const verifyAllCommand = require("./commands/verification/verifyall");
 
+const prereleaseCommand = require("./commands/prerelease/prerelease");
+const customRoleCommand = require("./commands/fun/customrole");
+
+const playCommand = require("./commands/music/play");
+const skipCommand = require("./commands/music/skip");
+const stopCommand = require("./commands/music/stop");
+const pauseCommand = require("./commands/music/pause");
+const resumeCommand = require("./commands/music/resume");
+const queueCommand = require("./commands/music/queue");
+const nowPlayingCommand = require("./commands/music/nowplaying");
+const volumeCommand = require("./commands/music/volume");
+const shuffleCommand = require("./commands/music/shuffle");
+const loopCommand = require("./commands/music/loop");
+const loopQueueCommand = require("./commands/music/loopqueue");
+const musicRemoveCommand = require("./commands/music/remove");
+const jumpCommand = require("./commands/music/jump");
+const autoplayCommand = require("./commands/music/autoplay");
+
 const pointCommand = new SlashCommandBuilder()
     .setName("point")
     .setDescription("Point management commands.")
@@ -51,6 +69,21 @@ const commands = [
     warnCommand.data.toJSON(),
     warningsCommand.data.toJSON(),
 
+    playCommand.data.toJSON(),
+skipCommand.data.toJSON(),
+stopCommand.data.toJSON(),
+pauseCommand.data.toJSON(),
+resumeCommand.data.toJSON(),
+queueCommand.data.toJSON(),
+nowPlayingCommand.data.toJSON(),
+volumeCommand.data.toJSON(),
+shuffleCommand.data.toJSON(),
+loopCommand.data.toJSON(),
+loopQueueCommand.data.toJSON(),
+musicRemoveCommand.data.toJSON(),
+jumpCommand.data.toJSON(),
+autoplayCommand.data.toJSON(),
+
     clankerCommand.data.toJSON(),
     fuckyouCommand.data.toJSON(),
     silenceCommand.data.toJSON(),
@@ -64,7 +97,9 @@ const commands = [
     restartCommand.data.toJSON(),
 
     verifyCommand.data.toJSON(),
-    verifyAllCommand.data.toJSON()
+    verifyAllCommand.data.toJSON(),
+    prereleaseCommand.data.toJSON(),
+    customRoleCommand.data.toJSON()
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
