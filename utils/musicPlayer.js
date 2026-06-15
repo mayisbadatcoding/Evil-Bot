@@ -3,7 +3,27 @@ const { SpotifyPlugin } = require("@distube/spotify");
 const { YouTubePlugin } = require("@distube/youtube");
 const ffmpegPath = require("ffmpeg-static");
 
+function parseYouTubeCookies(cookieString) {
+    if (!cookieString) return undefined;
+
+    return cookieString
+        .split(";")
+        .map(cookie => {
+            const [name, ...valueParts] = cookie.trim().split("=");
+
+            return {
+                name,
+                value: valueParts.join("="),
+                domain: ".youtube.com",
+                path: "/"
+            };
+        })
+        .filter(cookie => cookie.name && cookie.value);
+}
+
 function setupMusicPlayer(client) {
+    const youtubeCookies = parseYouTubeCookies(process.env.YOUTUBE_COOKIE);
+
     client.distube = new DisTube(client, {
         emitNewSongOnly: true,
         emitAddSongWhenCreatingQueue: true,
@@ -12,7 +32,9 @@ function setupMusicPlayer(client) {
             path: ffmpegPath
         },
         plugins: [
-            new YouTubePlugin(),
+            new YouTubePlugin({
+                cookies: youtubeCookies
+            }),
             new SpotifyPlugin()
         ]
     });
@@ -61,6 +83,11 @@ function setupMusicPlayer(client) {
         });
 
     console.log(`Music player loaded with FFmpeg: ${ffmpegPath}`);
+    console.log(
+        youtubeCookies
+            ? `YouTube cookies loaded: ${youtubeCookies.length}`
+            : "No YouTube cookies loaded."
+    );
 }
 
 module.exports = {
