@@ -1,5 +1,12 @@
 const { SlashCommandBuilder } = require("discord.js");
 
+function cleanQuery(input) {
+    return input
+        .replace(/^\/play\s+/i, "")
+        .replace(/^song:/i, "")
+        .trim();
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("play")
@@ -12,7 +19,8 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        const query = interaction.options.getString("song").trim();
+        const rawQuery = interaction.options.getString("song");
+        const query = cleanQuery(rawQuery);
         const voiceChannel = interaction.member.voice.channel;
 
         if (!voiceChannel) {
@@ -22,21 +30,21 @@ module.exports = {
             });
         }
 
-        await interaction.deferReply();
+        await interaction.reply({
+            content: `Loading: **${query}**`
+        });
 
         try {
             await interaction.client.distube.play(voiceChannel, query, {
                 textChannel: interaction.channel,
                 member: interaction.member
             });
-
-            await interaction.editReply(`Searching/playing: **${query}**`);
         } catch (error) {
             console.error("Play command error:", error);
 
-            await interaction.editReply(
-                "I could not play that. Try a normal YouTube link or a plain song name instead."
-            );
+            await interaction.followUp({
+                content: "I could not play that. Try a plain song name or a normal YouTube watch link."
+            }).catch(console.error);
         }
     }
 };
