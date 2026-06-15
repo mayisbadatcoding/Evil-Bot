@@ -16,8 +16,14 @@ const {
 const {
     initDatabase,
     isBugReportBanned,
-    banBugReporter
+    banBugReporter,
+    isPreReleaseEnabled
 } = require("./utils/storage");
+
+const {
+    canUsePreRelease,
+    hasFullCommandAccess
+} = require("./utils/permissions");
 
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
@@ -45,6 +51,7 @@ const maintenanceCommand = require("./commands/utility/maintenance");
 const evalCommand = require("./commands/utility/eval");
 const reloadCommand = require("./commands/utility/reload");
 const restartCommand = require("./commands/utility/restart");
+
 const playCommand = require("./commands/music/play");
 const skipCommand = require("./commands/music/skip");
 const stopCommand = require("./commands/music/stop");
@@ -59,16 +66,15 @@ const loopQueueCommand = require("./commands/music/loopqueue");
 const musicRemoveCommand = require("./commands/music/remove");
 const jumpCommand = require("./commands/music/jump");
 const autoplayCommand = require("./commands/music/autoplay");
+const seekCommand = require("./commands/music/seek");
+const twentyFourSevenCommand = require("./commands/music/247");
+const bassBoostCommand = require("./commands/music/bassboost");
+const nightcoreCommand = require("./commands/music/nightcore");
 
 const verifyCommand = require("./commands/verification/verify");
 const verifyAllCommand = require("./commands/verification/verifyall");
 
 const guildMemberAddEvent = require("./events/guildMemberAdd");
-
-const seekCommand = require("./commands/music/seek");
-const twentyFourSevenCommand = require("./commands/music/247");
-const bassBoostCommand = require("./commands/music/bassboost");
-const nightcoreCommand = require("./commands/music/nightcore");
 
 const {
     setupMusicPlayer,
@@ -76,6 +82,29 @@ const {
 } = require("./utils/musicPlayer");
 
 const { startOAuthServer } = require("./utils/oauthServer");
+
+const PRE_RELEASE_COMMANDS = [
+    "customrole",
+
+    "play",
+    "skip",
+    "stop",
+    "pause",
+    "resume",
+    "queue",
+    "nowplaying",
+    "volume",
+    "shuffle",
+    "loop",
+    "loopqueue",
+    "remove",
+    "jump",
+    "seek",
+    "autoplay",
+    "247",
+    "bassboost",
+    "nightcore"
+];
 
 const client = new Client({
     intents: [
@@ -85,6 +114,7 @@ const client = new Client({
         GatewayIntentBits.GuildVoiceStates
     ]
 });
+
 setupMusicPlayer(client);
 
 client.commands = new Collection();
@@ -95,11 +125,6 @@ client.commands.set("point checker", checkerCommand);
 
 client.commands.set("prerelease", prereleaseCommand);
 client.commands.set("customrole", customRoleCommand);
-
-client.commands.set("seek", seekCommand);
-client.commands.set("247", twentyFourSevenCommand);
-client.commands.set("bassboost", bassBoostCommand);
-client.commands.set("nightcore", nightcoreCommand);
 
 client.commands.set("play", playCommand);
 client.commands.set("skip", skipCommand);
@@ -115,6 +140,10 @@ client.commands.set("loopqueue", loopQueueCommand);
 client.commands.set("remove", musicRemoveCommand);
 client.commands.set("jump", jumpCommand);
 client.commands.set("autoplay", autoplayCommand);
+client.commands.set("seek", seekCommand);
+client.commands.set("247", twentyFourSevenCommand);
+client.commands.set("bassboost", bassBoostCommand);
+client.commands.set("nightcore", nightcoreCommand);
 
 client.commands.set("ban", banCommand);
 client.commands.set("clearwarnings", clearWarningsCommand);
@@ -207,7 +236,6 @@ client.on("interactionCreate", async interaction => {
 
             if (interaction.customId.startsWith("bug_accept_")) {
                 const userId = interaction.customId.replace("bug_accept_", "");
-
                 const user = await interaction.client.users.fetch(userId).catch(() => null);
 
                 if (user) {
@@ -227,9 +255,12 @@ client.on("interactionCreate", async interaction => {
             if (interaction.customId.startsWith("bug_ban_")) {
                 const userId = interaction.customId.replace("bug_ban_", "");
 
-                await banBugReporter(userId);
-
                 const user = await interaction.client.users.fetch(userId).catch(() => null);
+
+                await banBugReporter(
+                    userId,
+                    user ? user.tag : null
+                );
 
                 if (user) {
                     await user.send(
@@ -331,6 +362,20 @@ client.on("interactionCreate", async interaction => {
         ) {
             return interaction.reply({
                 content: "The bot is currently in maintenance mode.",
+                flags: 64
+            });
+        }
+
+        const preReleaseEnabled = await isPreReleaseEnabled();
+
+        if (
+            preReleaseEnabled &&
+            PRE_RELEASE_COMMANDS.includes(interaction.commandName) &&
+            !canUsePreRelease(interaction.member) &&
+            !hasFullCommandAccess(interaction.member)
+        ) {
+            return interaction.reply({
+                content: "This command is currently only available to V1 testers. Contact May to join the team.",
                 flags: 64
             });
         }

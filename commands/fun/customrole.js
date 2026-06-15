@@ -1,6 +1,6 @@
 const {
     SlashCommandBuilder,
-    PermissionFlagsBits
+    PermissionsBitField
 } = require("discord.js");
 
 const {
@@ -72,10 +72,7 @@ module.exports = {
     async execute(interaction) {
         const preReleaseEnabled = await isPreReleaseEnabled();
 
-        if (
-            preReleaseEnabled &&
-            !canUsePreRelease(interaction.member)
-        ) {
+        if (preReleaseEnabled && !canUsePreRelease(interaction.member)) {
             return interaction.reply({
                 content: "This command is currently in pre-release testing.",
                 flags: 64
@@ -100,12 +97,12 @@ module.exports = {
                     "No reason provided.";
 
                 await blacklistCustomRoleUser(
-    user.id,
-    user.tag,
-    interaction.user.id,
-    interaction.user.tag,
-    reason
-);
+                    user.id,
+                    user.tag,
+                    interaction.user.id,
+                    interaction.user.tag,
+                    reason
+                );
 
                 return interaction.reply({
                     content: `${user} has been blacklisted from custom roles.\nReason: **${reason}**`
@@ -113,7 +110,7 @@ module.exports = {
             }
 
             if (subcommand === "unblacklist") {
-                await unblacklistCustomRoleUser(user.id, user.tag);
+                await unblacklistCustomRoleUser(user.id);
 
                 return interaction.reply({
                     content: `${user} has been unblacklisted from custom roles.`
@@ -121,9 +118,7 @@ module.exports = {
             }
         }
 
-        const blacklisted = await isCustomRoleBlacklisted(
-            interaction.user.id
-        );
+        const blacklisted = await isCustomRoleBlacklisted(interaction.user.id);
 
         if (blacklisted) {
             return interaction.reply({
@@ -155,22 +150,28 @@ module.exports = {
                 });
             }
 
+            if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+                return interaction.reply({
+                    content: "I need the **Manage Roles** permission to create custom roles.",
+                    flags: 64
+                });
+            }
+
             const existing = await getCustomRole(interaction.user.id);
 
             if (existing) {
-                const role = interaction.guild.roles.cache.get(
-                    existing.role_id
-                );
+                const role = interaction.guild.roles.cache.get(existing.role_id);
 
                 if (role) {
                     await role.setName(name);
                     await interaction.member.roles.add(role).catch(() => {});
+
                     await saveCustomRole(
-    interaction.user.id,
-    interaction.user.tag,
-    role.id,
-    name
-);
+                        interaction.user.id,
+                        interaction.user.tag,
+                        role.id,
+                        name
+                    );
 
                     return interaction.reply({
                         content: `Your custom role has been renamed to **${name}**.`
@@ -180,7 +181,6 @@ module.exports = {
 
             const role = await interaction.guild.roles.create({
                 name,
-                color: null,
                 mentionable: false,
                 hoist: false,
                 reason: `Custom role created by ${interaction.user.tag}`
@@ -190,6 +190,7 @@ module.exports = {
 
             await saveCustomRole(
                 interaction.user.id,
+                interaction.user.tag,
                 role.id,
                 name
             );
@@ -209,9 +210,7 @@ module.exports = {
                 });
             }
 
-            const role = interaction.guild.roles.cache.get(
-                existing.role_id
-            );
+            const role = interaction.guild.roles.cache.get(existing.role_id);
 
             if (role) {
                 await role.delete(
