@@ -12,7 +12,7 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        const query = interaction.options.getString("song");
+        const query = interaction.options.getString("song").trim();
         const voiceChannel = interaction.member.voice.channel;
 
         if (!voiceChannel) {
@@ -22,11 +22,21 @@ module.exports = {
             });
         }
 
-        await interaction.reply(`Searching for: **${query}**`);
+        await interaction.deferReply();
 
-        await interaction.client.distube.play(voiceChannel, query, {
-            textChannel: interaction.channel,
-            member: interaction.member
-        });
+        try {
+            await interaction.client.distube.play(voiceChannel, query, {
+                textChannel: interaction.channel,
+                member: interaction.member
+            });
+
+            await interaction.editReply(`Searching/playing: **${query}**`);
+        } catch (error) {
+            console.error("Play command error:", error);
+
+            await interaction.editReply(
+                "I could not play that. Try a normal YouTube link or a plain song name instead."
+            );
+        }
     }
 };
