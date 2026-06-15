@@ -14,6 +14,15 @@ const {
 } = require("discord.js");
 
 const {
+    setupLogCapture,
+    sendStartupMessage,
+    sendCrashMessage,
+    getRecentLogs
+} = require("./utils/startupMonitor");
+
+setupLogCapture();
+
+const {
     initDatabase,
     isBugReportBanned,
     banBugReporter,
@@ -173,6 +182,7 @@ client.once("clientReady", async () => {
         await initDatabase();
         startOAuthServer(client);
         initMusicPlayer(client);
+        await sendStartupMessage(client);
 
         console.log("Database connected and ready.");
         console.log("Roblox connected and ready.");
@@ -188,155 +198,31 @@ client.on("guildMemberAdd", async member => {
 
 client.on("interactionCreate", async interaction => {
     try {
-        if (interaction.isButton()) {
-            if (interaction.customId === "open_bug_report") {
-                const banned = await isBugReportBanned(interaction.user.id);
+      if (interaction.isButton()) {
 
-                if (banned) {
-                    return interaction.reply({
-                        content: "You are banned from using the verification bug report system.",
-                        flags: 64
-                    });
-                }
+    if (interaction.customId === "mark_restart_as_crash") {
+        const logs = await getRecentLogs();
 
-                const modal = new ModalBuilder()
-                    .setCustomId("verify_bug_report_modal")
-                    .setTitle("Verification Bug Report");
+        const embed = new EmbedBuilder()
+            .setTitle("Restart Marked as Crash")
+            .setColor(0xe74c3c)
+            .setDescription(
+                `${interaction.user} marked this restart as a crash.`
+            )
+            .addFields({
+                name: "Recent Logs",
+                value: `\`\`\`\n${logs.slice(0, 1000)}\n\`\`\``
+            })
+            .setTimestamp();
 
-                const robloxUsernameInput = new TextInputBuilder()
-                    .setCustomId("roblox_username")
-                    .setLabel("Your Roblox username")
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true);
+        await interaction.update({
+            embeds: [embed],
+            components: []
+        });
 
-                const issueInput = new TextInputBuilder()
-                    .setCustomId("issue")
-                    .setLabel("What went wrong?")
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setRequired(true);
-
-                modal.addComponents(
-                    new ActionRowBuilder().addComponents(robloxUsernameInput),
-                    new ActionRowBuilder().addComponents(issueInput)
-                );
-
-                return interaction.showModal(modal);
-            }
-
-            if (interaction.customId.startsWith("bug_disregard_")) {
-                const userId = interaction.customId.replace("bug_disregard_", "");
-
-                await interaction.update({
-                    content: `Bug report from <@${userId}> was disregarded by ${interaction.user}.`,
-                    components: []
-                });
-
-                return;
-            }
-
-            if (interaction.customId.startsWith("bug_accept_")) {
-                const userId = interaction.customId.replace("bug_accept_", "");
-                const user = await interaction.client.users.fetch(userId).catch(() => null);
-
-                if (user) {
-                    await user.send(
-                        "Your verification bug report was accepted. Staff will manually role you soon."
-                    ).catch(() => {});
-                }
-
-                await interaction.update({
-                    content: `Bug report from <@${userId}> was accepted by ${interaction.user}.`,
-                    components: []
-                });
-
-                return;
-            }
-
-            if (interaction.customId.startsWith("bug_ban_")) {
-                const userId = interaction.customId.replace("bug_ban_", "");
-
-                const user = await interaction.client.users.fetch(userId).catch(() => null);
-
-                await banBugReporter(
-                    userId,
-                    user ? user.tag : null
-                );
-
-                if (user) {
-                    await user.send(
-                        "You have been banned from using the verification bug report system."
-                    ).catch(() => {});
-                }
-
-                await interaction.update({
-                    content: `<@${userId}> was banned from verification bug reports by ${interaction.user}.`,
-                    components: []
-                });
-
-                return;
-            }
-        }
-
-        if (interaction.isModalSubmit()) {
-            if (interaction.customId === "verify_bug_report_modal") {
-                const robloxUsername = interaction.fields.getTextInputValue("roblox_username");
-                const issue = interaction.fields.getTextInputValue("issue");
-
-                const guild = await interaction.client.guilds.fetch(
-                    process.env.BUG_REPORT_SERVER_ID
-                );
-
-                const channel = await guild.channels.fetch(
-                    process.env.BUG_REPORT_CHANNEL_ID
-                );
-
-                const embed = new EmbedBuilder()
-                    .setTitle("Verification Bug Report")
-                    .setColor(0xffcc00)
-                    .addFields(
-                        {
-                            name: "Discord User",
-                            value: `${interaction.user} (\`${interaction.user.id}\`)`
-                        },
-                        {
-                            name: "Roblox Username",
-                            value: robloxUsername
-                        },
-                        {
-                            name: "Issue",
-                            value: issue
-                        }
-                    )
-                    .setTimestamp();
-
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`bug_disregard_${interaction.user.id}`)
-                        .setLabel("Disregard")
-                        .setStyle(ButtonStyle.Secondary),
-
-                    new ButtonBuilder()
-                        .setCustomId(`bug_accept_${interaction.user.id}`)
-                        .setLabel("Accept as Real Bug")
-                        .setStyle(ButtonStyle.Success),
-
-                    new ButtonBuilder()
-                        .setCustomId(`bug_ban_${interaction.user.id}`)
-                        .setLabel("Ban From Reports")
-                        .setStyle(ButtonStyle.Danger)
-                );
-
-                await channel.send({
-                    embeds: [embed],
-                    components: [row]
-                });
-
-                return interaction.reply({
-                    content: "Your bug report has been sent to staff.",
-                    flags: 64
-                });
-            }
-        }
+        return;
+    }
+}
 
         if (!interaction.isChatInputCommand()) return;
 
@@ -397,16 +283,23 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-client.on("error", error => {
+client.on("error", async error => {
     console.error("CLIENT ERROR:", error);
+    await sendCrashMessage(client, error);
 });
 
-process.on("unhandledRejection", error => {
+process.on("unhandledRejection", async error => {
     console.error("UNHANDLED PROMISE REJECTION:", error);
+    await sendCrashMessage(client, error);
 });
 
-process.on("uncaughtException", error => {
+process.on("uncaughtException", async error => {
     console.error("UNCAUGHT EXCEPTION:", error);
+    await sendCrashMessage(client, error);
+
+    setTimeout(() => {
+        process.exit(1);
+    }, 1500);
 });
 
 client.login(process.env.TOKEN);

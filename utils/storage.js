@@ -23,6 +23,15 @@ async function initDatabase() {
     `);
 
     await pool.query(`
+    CREATE TABLE IF NOT EXISTS bot_logs (
+        id SERIAL PRIMARY KEY,
+        level TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+`);
+
+    await pool.query(`
         CREATE TABLE IF NOT EXISTS custom_roles (
             user_id TEXT PRIMARY KEY,
             username TEXT,
@@ -400,6 +409,29 @@ async function unblacklistCustomRoleUser(userId) {
         [userId]
     );
 }
+async function saveBotLog(level, message) {
+    await pool.query(
+        `
+        INSERT INTO bot_logs (level, message)
+        VALUES ($1, $2);
+        `,
+        [level, String(message).slice(0, 4000)]
+    ).catch(() => {});
+}
+
+async function getRecentBotLogs(minutes = 5) {
+    const result = await pool.query(
+        `
+        SELECT level, message, created_at
+        FROM bot_logs
+        WHERE created_at >= NOW() - ($1 || ' minutes')::INTERVAL
+        ORDER BY created_at ASC;
+        `,
+        [minutes]
+    );
+
+    return result.rows;
+}
 
 module.exports = {
     initDatabase,
@@ -432,5 +464,7 @@ module.exports = {
     deleteCustomRole,
     isCustomRoleBlacklisted,
     blacklistCustomRoleUser,
-    unblacklistCustomRoleUser
+    unblacklistCustomRoleUser,
+    saveBotLog,
+    getRecentBotLogs
 };
