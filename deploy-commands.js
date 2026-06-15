@@ -70,19 +70,19 @@ const commands = [
     warningsCommand.data.toJSON(),
 
     playCommand.data.toJSON(),
-skipCommand.data.toJSON(),
-stopCommand.data.toJSON(),
-pauseCommand.data.toJSON(),
-resumeCommand.data.toJSON(),
-queueCommand.data.toJSON(),
-nowPlayingCommand.data.toJSON(),
-volumeCommand.data.toJSON(),
-shuffleCommand.data.toJSON(),
-loopCommand.data.toJSON(),
-loopQueueCommand.data.toJSON(),
-musicRemoveCommand.data.toJSON(),
-jumpCommand.data.toJSON(),
-autoplayCommand.data.toJSON(),
+    skipCommand.data.toJSON(),
+    stopCommand.data.toJSON(),
+    pauseCommand.data.toJSON(),
+    resumeCommand.data.toJSON(),
+    queueCommand.data.toJSON(),
+    nowPlayingCommand.data.toJSON(),
+    volumeCommand.data.toJSON(),
+    shuffleCommand.data.toJSON(),
+    loopCommand.data.toJSON(),
+    loopQueueCommand.data.toJSON(),
+    musicRemoveCommand.data.toJSON(),
+    jumpCommand.data.toJSON(),
+    autoplayCommand.data.toJSON(),
 
     clankerCommand.data.toJSON(),
     fuckyouCommand.data.toJSON(),
@@ -101,6 +101,18 @@ autoplayCommand.data.toJSON(),
     prereleaseCommand.data.toJSON(),
     customRoleCommand.data.toJSON()
 ];
+
+const names = commands.map(command => command.name);
+const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+
+if (duplicates.length > 0) {
+    console.error("Duplicate command names found:");
+    console.error(duplicates);
+    process.exit(1);
+}
+
+console.log("Commands being registered:");
+console.log(names);
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 

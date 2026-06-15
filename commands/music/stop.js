@@ -2,8 +2,8 @@ const { SlashCommandBuilder } = require("discord.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("skip")
-        .setDescription("Skip the currently playing song."),
+        .setName("stop")
+        .setDescription("Stop playback and clear the queue."),
 
     async execute(interaction) {
         const queue = interaction.client.distube.getQueue(interaction.guildId);
@@ -15,8 +15,8 @@ module.exports = {
             });
         }
 
-        await queue.skip();
+        queue.stop();
 
-        await interaction.reply("Skipped the current song.");
+        await interaction.reply("Stopped playback and cleared the queue.");
     }
 };
