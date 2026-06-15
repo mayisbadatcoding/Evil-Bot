@@ -1,10 +1,14 @@
 const { DisTube } = require("distube");
 const { SpotifyPlugin } = require("@distube/spotify");
+const ffmpegPath = require("ffmpeg-static");
 
 function setupMusicPlayer(client) {
     client.distube = new DisTube(client, {
         emitNewSongOnly: true,
         savePreviousSongs: true,
+        ffmpeg: {
+            path: ffmpegPath
+        },
         plugins: [
             new SpotifyPlugin()
         ]
@@ -35,7 +39,7 @@ function setupMusicPlayer(client) {
             queue.textChannel?.send("Queue finished.").catch(() => {});
         });
 
-    console.log("Music player loaded.");
+    console.log(`Music player loaded with FFmpeg: ${ffmpegPath}`);
 }
 
 module.exports = {
