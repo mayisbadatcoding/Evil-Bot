@@ -207,7 +207,7 @@ client.on("interactionCreate", async interaction => {
             .setTitle("Restart Marked as Crash")
             .setColor(0xe74c3c)
             .setDescription(
-                `${interaction.user} marked this restart as a crash.`
+                `${interaction.user} marked this restart as a crash!`
             )
             .addFields({
                 name: "Recent Logs",
