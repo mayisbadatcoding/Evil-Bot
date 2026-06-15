@@ -1,47 +1,23 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer } = require("../../utils/musicHelpers");
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("remove")
         .setDescription("Remove a song from the queue.")
         .addIntegerOption(option =>
-            option
-                .setName("position")
-                .setDescription("Queue position to remove.")
-                .setRequired(true)
-                .setMinValue(1)
+            option.setName("position").setDescription("Queue position.").setRequired(true).setMinValue(1)
         ),
 
     async execute(interaction) {
-        const queue = interaction.client.distube.getQueue(interaction.guildId);
+        const player = getPlayer(interaction.client, interaction.guildId);
+        if (!player) return interaction.reply({ content: "No queue.", flags: 64 });
 
-        if (!queue) {
-            return interaction.reply({
-                content: "There is no queue.",
-                flags: 64
-            });
-        }
+        const position = interaction.options.getInteger("position") - 1;
+        const removed = player.queue.tracks.splice(position, 1)[0];
 
-        const position = interaction.options.getInteger("position");
+        if (!removed) return interaction.reply({ content: "Invalid position.", flags: 64 });
 
-        if (position === 1) {
-            return interaction.reply({
-                content: "Use /skip to remove the currently playing song.",
-                flags: 64
-            });
-        }
-
-        const song = queue.songs[position - 1];
-
-        if (!song) {
-            return interaction.reply({
-                content: "Invalid queue position.",
-                flags: 64
-            });
-        }
-
-        queue.songs.splice(position - 1, 1);
-
-        await interaction.reply(`Removed **${song.name}** from the queue.`);
+        await interaction.reply(`Removed **${removed.info.title}**.`);
     }
 };

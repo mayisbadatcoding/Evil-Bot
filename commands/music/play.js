@@ -1,50 +1,50 @@
 const { SlashCommandBuilder } = require("discord.js");
-
-function cleanQuery(input) {
-    return input
-        .replace(/^\/play\s+/i, "")
-        .replace(/^song:/i, "")
-        .trim();
-}
+const { formatTrack } = require("../../utils/musicHelpers");
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("play")
         .setDescription("Play a song from YouTube, Spotify, or a search term.")
         .addStringOption(option =>
-            option
-                .setName("song")
-                .setDescription("Song name or URL.")
-                .setRequired(true)
+            option.setName("song").setDescription("Song name or URL.").setRequired(true)
         ),
 
     async execute(interaction) {
-        const rawQuery = interaction.options.getString("song");
-        const query = cleanQuery(rawQuery);
+        const query = interaction.options.getString("song").trim();
         const voiceChannel = interaction.member.voice.channel;
 
         if (!voiceChannel) {
-            return interaction.reply({
-                content: "You need to be in a voice channel first.",
-                flags: 64
-            });
+            return interaction.reply({ content: "Join a voice channel first.", flags: 64 });
         }
 
-        await interaction.reply({
-            content: `Loading: **${query}**`
+        await interaction.deferReply();
+
+        const player = interaction.client.lavalink.createPlayer({
+            guildId: interaction.guildId,
+            voiceChannelId: voiceChannel.id,
+            textChannelId: interaction.channelId,
+            selfDeaf: true
         });
 
-        try {
-            await interaction.client.distube.play(voiceChannel, query, {
-                textChannel: interaction.channel,
-                member: interaction.member
-            });
-        } catch (error) {
-            console.error("Play command error:", error);
+        await player.connect();
 
-            await interaction.followUp({
-                content: "I could not play that. Try a plain song name or a normal YouTube watch link."
-            }).catch(console.error);
+        const result = await player.search({ query }, interaction.user);
+
+        if (!result || !result.tracks || result.tracks.length === 0) {
+            return interaction.editReply("No results found.");
+        }
+
+        if (result.loadType === "playlist") {
+            player.queue.add(result.tracks);
+            await interaction.editReply(`Added playlist with **${result.tracks.length}** tracks.`);
+        } else {
+            const track = result.tracks[0];
+            player.queue.add(track);
+            await interaction.editReply(`Added: ${formatTrack(track)}`);
+        }
+
+        if (!player.playing && !player.paused) {
+            await player.play();
         }
     }
 };

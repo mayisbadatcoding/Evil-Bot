@@ -36,6 +36,11 @@ const verifyAllCommand = require("./commands/verification/verifyall");
 const prereleaseCommand = require("./commands/prerelease/prerelease");
 const customRoleCommand = require("./commands/fun/customrole");
 
+const seekCommand = require("./commands/music/seek");
+const twentyFourSevenCommand = require("./commands/music/247");
+const bassBoostCommand = require("./commands/music/bassboost");
+const nightcoreCommand = require("./commands/music/nightcore");
+
 const playCommand = require("./commands/music/play");
 const skipCommand = require("./commands/music/skip");
 const stopCommand = require("./commands/music/stop");
@@ -99,7 +104,12 @@ const commands = [
     verifyCommand.data.toJSON(),
     verifyAllCommand.data.toJSON(),
     prereleaseCommand.data.toJSON(),
-    customRoleCommand.data.toJSON()
+    customRoleCommand.data.toJSON(),
+
+    seekCommand.data.toJSON(),
+twentyFourSevenCommand.data.toJSON(),
+bassBoostCommand.data.toJSON(),
+nightcoreCommand.data.toJSON()
 ];
 
 const names = commands.map(command => command.name);

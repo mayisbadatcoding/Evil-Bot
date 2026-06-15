@@ -1,22 +1,14 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer } = require("../../utils/musicHelpers");
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName("shuffle")
-        .setDescription("Randomly shuffle the current queue."),
+    data: new SlashCommandBuilder().setName("shuffle").setDescription("Shuffle the queue."),
 
     async execute(interaction) {
-        const queue = interaction.client.distube.getQueue(interaction.guildId);
+        const player = getPlayer(interaction.client, interaction.guildId);
+        if (!player) return interaction.reply({ content: "No queue.", flags: 64 });
 
-        if (!queue) {
-            return interaction.reply({
-                content: "There is no queue to shuffle.",
-                flags: 64
-            });
-        }
-
-        queue.shuffle();
-
+        player.queue.shuffle();
         await interaction.reply("Queue shuffled.");
     }
 };

@@ -1,22 +1,16 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer } = require("../../utils/musicHelpers");
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName("autoplay")
-        .setDescription("Toggle autoplay for related songs."),
+    data: new SlashCommandBuilder().setName("autoplay").setDescription("Toggle autoplay."),
 
     async execute(interaction) {
-        const queue = interaction.client.distube.getQueue(interaction.guildId);
+        const player = getPlayer(interaction.client, interaction.guildId);
+        if (!player) return interaction.reply({ content: "Nothing is playing.", flags: 64 });
 
-        if (!queue) {
-            return interaction.reply({
-                content: "There is no queue.",
-                flags: 64
-            });
-        }
+        player.customData = player.customData || {};
+        player.customData.autoplay = !player.customData.autoplay;
 
-        const enabled = queue.toggleAutoplay();
-
-        await interaction.reply(`Autoplay is now **${enabled ? "enabled" : "disabled"}**.`);
+        await interaction.reply(`Autoplay is now **${player.customData.autoplay ? "enabled" : "disabled"}**.`);
     }
 };

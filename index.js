@@ -65,7 +65,15 @@ const verifyAllCommand = require("./commands/verification/verifyall");
 
 const guildMemberAddEvent = require("./events/guildMemberAdd");
 
-const { setupMusicPlayer } = require("./utils/musicPlayer");
+const seekCommand = require("./commands/music/seek");
+const twentyFourSevenCommand = require("./commands/music/247");
+const bassBoostCommand = require("./commands/music/bassboost");
+const nightcoreCommand = require("./commands/music/nightcore");
+
+const {
+    setupMusicPlayer,
+    initMusicPlayer
+} = require("./utils/musicPlayer");
 
 const { startOAuthServer } = require("./utils/oauthServer");
 
@@ -87,6 +95,11 @@ client.commands.set("point checker", checkerCommand);
 
 client.commands.set("prerelease", prereleaseCommand);
 client.commands.set("customrole", customRoleCommand);
+
+client.commands.set("seek", seekCommand);
+client.commands.set("247", twentyFourSevenCommand);
+client.commands.set("bassboost", bassBoostCommand);
+client.commands.set("nightcore", nightcoreCommand);
 
 client.commands.set("play", playCommand);
 client.commands.set("skip", skipCommand);
@@ -130,6 +143,7 @@ client.once("clientReady", async () => {
     try {
         await initDatabase();
         startOAuthServer(client);
+        initMusicPlayer(client);
 
         console.log("Database connected and ready.");
         console.log("Roblox connected and ready.");

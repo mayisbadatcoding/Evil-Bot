@@ -1,24 +1,16 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer, formatTrack } = require("../../utils/musicHelpers");
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName("nowplaying")
-        .setDescription("Display the currently playing song."),
+    data: new SlashCommandBuilder().setName("nowplaying").setDescription("Show the current song."),
 
     async execute(interaction) {
-        const queue = interaction.client.distube.getQueue(interaction.guildId);
+        const player = getPlayer(interaction.client, interaction.guildId);
 
-        if (!queue || !queue.songs.length) {
-            return interaction.reply({
-                content: "There is no song playing.",
-                flags: 64
-            });
+        if (!player || !player.queue.current) {
+            return interaction.reply({ content: "Nothing is playing.", flags: 64 });
         }
 
-        const song = queue.songs[0];
-
-        await interaction.reply(
-            `Now playing: **${song.name}** - \`${song.formattedDuration}\`\n${song.url}`
-        );
+        await interaction.reply(`Now playing: ${formatTrack(player.queue.current)}`);
     }
 };

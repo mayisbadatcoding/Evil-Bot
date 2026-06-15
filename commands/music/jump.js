@@ -1,31 +1,26 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer } = require("../../utils/musicHelpers");
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("jump")
-        .setDescription("Jump to a specific song in the queue.")
+        .setDescription("Jump to a song in the queue.")
         .addIntegerOption(option =>
-            option
-                .setName("position")
-                .setDescription("Queue position to jump to.")
-                .setRequired(true)
-                .setMinValue(1)
+            option.setName("position").setDescription("Queue position.").setRequired(true).setMinValue(1)
         ),
 
     async execute(interaction) {
-        const queue = interaction.client.distube.getQueue(interaction.guildId);
+        const player = getPlayer(interaction.client, interaction.guildId);
+        if (!player) return interaction.reply({ content: "No queue.", flags: 64 });
 
-        if (!queue) {
-            return interaction.reply({
-                content: "There is no queue.",
-                flags: 64
-            });
-        }
+        const position = interaction.options.getInteger("position") - 1;
+        const track = player.queue.tracks[position];
 
-        const position = interaction.options.getInteger("position");
+        if (!track) return interaction.reply({ content: "Invalid position.", flags: 64 });
 
-        await queue.jump(position - 1);
+        player.queue.tracks.splice(0, position);
+        await player.skip();
 
-        await interaction.reply(`Jumped to queue position **${position}**.`);
+        await interaction.reply(`Jumped to **${track.info.title}**.`);
     }
 };

@@ -1,95 +1,74 @@
-const { DisTube } = require("distube");
-const { SpotifyPlugin } = require("@distube/spotify");
-const { YouTubePlugin } = require("@distube/youtube");
-const ffmpegPath = require("ffmpeg-static");
-
-function parseYouTubeCookies(cookieString) {
-    if (!cookieString) return undefined;
-
-    return cookieString
-        .split(";")
-        .map(cookie => {
-            const [name, ...valueParts] = cookie.trim().split("=");
-
-            return {
-                name,
-                value: valueParts.join("="),
-                domain: ".youtube.com",
-                path: "/"
-            };
-        })
-        .filter(cookie => cookie.name && cookie.value);
-}
+const { LavalinkManager } = require("lavalink-client");
 
 function setupMusicPlayer(client) {
-    const youtubeCookies = parseYouTubeCookies(process.env.YOUTUBE_COOKIE);
+    client.lavalink = new LavalinkManager({
+        nodes: [
+            {
+                id: "Evil-Lavalink",
+                host: process.env.LAVALINK_HOST,
+                port: Number(process.env.LAVALINK_PORT || 443),
+                authorization: process.env.LAVALINK_PASSWORD,
+                secure: process.env.LAVALINK_SECURE === "true"
+            }
+        ],
 
-    client.distube = new DisTube(client, {
-        emitNewSongOnly: true,
-        emitAddSongWhenCreatingQueue: true,
-        savePreviousSongs: true,
-        ffmpeg: {
-            path: ffmpegPath
+        sendToShard: (guildId, payload) => {
+            const guild = client.guilds.cache.get(guildId);
+            if (guild) guild.shard.send(payload);
         },
-        plugins: [
-            new YouTubePlugin({
-                cookies: youtubeCookies
-            }),
-            new SpotifyPlugin()
-        ]
+
+        autoSkip: true,
+
+        client: {
+            id: process.env.CLIENT_ID,
+            username: "Evil Bot"
+        },
+
+        playerOptions: {
+            defaultSearchPlatform: "ytsearch",
+            onDisconnect: {
+                autoReconnect: true,
+                destroyPlayer: false
+            },
+            onEmptyQueue: {
+                destroyAfterMs: 30000
+            }
+        }
     });
 
-    client.distube
-        .on("playSong", (queue, song) => {
-            queue.textChannel?.send(
-                `Now playing: **${song.name}** - \`${song.formattedDuration}\``
-            ).catch(() => {});
-        })
+    client.on("raw", data => {
+        client.lavalink.sendRawData(data);
+    });
 
-        .on("addSong", (queue, song) => {
-            queue.textChannel?.send(
-                `Added to queue: **${song.name}** - \`${song.formattedDuration}\``
-            ).catch(() => {});
-        })
+    client.lavalink.nodeManager.on("connect", node => {
+        console.log(`Lavalink node connected: ${node.id}`);
+    });
 
-        .on("finishSong", (queue, song) => {
-            queue.textChannel?.send(
-                `Finished: **${song.name}**`
-            ).catch(() => {});
-        })
+    client.lavalink.nodeManager.on("error", (node, error) => {
+        console.error(`Lavalink node error on ${node.id}:`, error);
+    });
 
-        .on("finish", queue => {
-            queue.textChannel?.send("Queue finished.").catch(() => {});
-        })
+    client.lavalink.on("trackStart", (player, track) => {
+        const channel = client.channels.cache.get(player.textChannelId);
+        channel?.send(`Now playing: **${track.info.title}**`).catch(() => {});
+    });
 
-        .on("empty", queue => {
-            queue.textChannel?.send("Voice channel is empty. Leaving.").catch(() => {});
-        })
+    client.lavalink.on("queueEnd", player => {
+        const channel = client.channels.cache.get(player.textChannelId);
+        channel?.send("Queue finished.").catch(() => {});
+    });
 
-        .on("disconnect", queue => {
-            queue.textChannel?.send("Disconnected from voice.").catch(() => {});
-        })
+    console.log("Lavalink music player loaded.");
+}
 
-        .on("error", (error, queue) => {
-            console.error("REAL DISTUBE ERROR:", error);
-
-            const channel = queue?.textChannel;
-
-            if (channel) {
-                channel.send(
-                    `Music error: \`${error.message || error}\``
-                ).catch(() => {});
-            }
-        });
-
-    console.log(`Music player loaded with FFmpeg: ${ffmpegPath}`);
-    console.log(
-        youtubeCookies
-            ? `YouTube cookies loaded: ${youtubeCookies.length}`
-            : "No YouTube cookies loaded."
-    );
+function initMusicPlayer(client) {
+    client.lavalink.init({
+        id: client.user.id,
+        username: client.user.username
+    });
 }
 
 module.exports = {
-    setupMusicPlayer
+    setupMusicPlayer,
+    initMusicPlayer
 };

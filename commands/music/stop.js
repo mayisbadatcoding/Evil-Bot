@@ -1,22 +1,15 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer } = require("../../utils/musicHelpers");
 
 module.exports = {
-    data: new SlashCommandBuilder()
-        .setName("stop")
-        .setDescription("Stop playback and clear the queue."),
+    data: new SlashCommandBuilder().setName("stop").setDescription("Stop playback and clear the queue."),
 
     async execute(interaction) {
-        const queue = interaction.client.distube.getQueue(interaction.guildId);
+        const player = getPlayer(interaction.client, interaction.guildId);
+        if (!player) return interaction.reply({ content: "Nothing is playing.", flags: 64 });
 
-        if (!queue) {
-            return interaction.reply({
-                content: "There is no music playing.",
-                flags: 64
-            });
-        }
-
-        queue.stop();
-
+        player.queue.tracks.splice(0);
+        await player.destroy();
         await interaction.reply("Stopped playback and cleared the queue.");
     }
 };
