@@ -1,5 +1,6 @@
 const { DisTube } = require("distube");
 const { SpotifyPlugin } = require("@distube/spotify");
+const { YouTubePlugin } = require("@distube/youtube");
 const ffmpegPath = require("ffmpeg-static");
 
 function setupMusicPlayer(client) {
@@ -10,6 +11,7 @@ function setupMusicPlayer(client) {
             path: ffmpegPath
         },
         plugins: [
+            new YouTubePlugin(),
             new SpotifyPlugin()
         ]
     });
