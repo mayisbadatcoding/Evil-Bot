@@ -80,6 +80,10 @@ const twentyFourSevenCommand = require("./commands/music/247");
 const bassBoostCommand = require("./commands/music/bassboost");
 const nightcoreCommand = require("./commands/music/nightcore");
 
+const healthCommand = require("./commands/utility/health");
+const dbStatsCommand = require("./commands/utility/dbstats");
+const memoryCommand = require("./commands/utility/memory");
+
 const verifyCommand = require("./commands/verification/verify");
 const verifyAllCommand = require("./commands/verification/verifyall");
 
@@ -134,6 +138,9 @@ client.commands.set("point checker", checkerCommand);
 
 client.commands.set("prerelease", prereleaseCommand);
 client.commands.set("customrole", customRoleCommand);
+client.commands.set("health", healthCommand);
+client.commands.set("dbstats", dbStatsCommand);
+client.commands.set("memory", memoryCommand);
 
 client.commands.set("play", playCommand);
 client.commands.set("skip", skipCommand);

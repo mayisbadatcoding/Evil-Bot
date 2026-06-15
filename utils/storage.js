@@ -232,6 +232,44 @@ async function getWarnings(userId) {
 
     return result.rows;
 }
+async function getDatabaseStats() {
+    const stats = {};
+
+    try {
+        const points = await pool.query(
+            "SELECT COUNT(*) FROM points"
+        );
+
+        const warnings = await pool.query(
+            "SELECT COUNT(*) FROM warnings"
+        );
+
+        const links = await pool.query(
+            "SELECT COUNT(*) FROM roblox_links"
+        );
+
+        const customRoles = await pool.query(
+            "SELECT COUNT(*) FROM custom_roles"
+        );
+
+        stats.points = points.rows[0].count;
+        stats.warnings = warnings.rows[0].count;
+        stats.links = links.rows[0].count;
+        stats.customRoles = customRoles.rows[0].count;
+
+        const pingStart = Date.now();
+
+        await pool.query("SELECT NOW()");
+
+        stats.ping = Date.now() - pingStart;
+
+        stats.connected = true;
+    } catch {
+        stats.connected = false;
+    }
+
+    return stats;
+}
 
 async function clearWarnings(userId) {
     const result = await pool.query(
@@ -466,5 +504,7 @@ module.exports = {
     blacklistCustomRoleUser,
     unblacklistCustomRoleUser,
     saveBotLog,
-    getRecentBotLogs
+    getRecentBotLogs,
+
+    getDatabaseStats,
 };

@@ -56,6 +56,10 @@ const musicRemoveCommand = require("./commands/music/remove");
 const jumpCommand = require("./commands/music/jump");
 const autoplayCommand = require("./commands/music/autoplay");
 
+const healthCommand = require("./commands/utility/health");
+const dbStatsCommand = require("./commands/utility/dbstats");
+const memoryCommand = require("./commands/utility/memory");
+
 const pointCommand = new SlashCommandBuilder()
     .setName("point")
     .setDescription("Point management commands.")
@@ -106,10 +110,14 @@ const commands = [
     prereleaseCommand.data.toJSON(),
     customRoleCommand.data.toJSON(),
 
+    healthCommand.data.toJSON(),
+    dbStatsCommand.data.toJSON(),
+    memoryCommand.data.toJSON(),
+
     seekCommand.data.toJSON(),
-twentyFourSevenCommand.data.toJSON(),
-bassBoostCommand.data.toJSON(),
-nightcoreCommand.data.toJSON()
+    twentyFourSevenCommand.data.toJSON(),
+    bassBoostCommand.data.toJSON(),
+    nightcoreCommand.data.toJSON()
 ];
 
 const names = commands.map(command => command.name);
