@@ -177,6 +177,7 @@ client.commands.set("silence", silenceCommand);
 client.commands.set("ping", pingCommand);
 client.commands.set("8ball", eightBallCommand);
 client.commands.set("status", statusCommand);
+client.commands.set("massnick", massNickCommand);
 client.commands.set("maintenance", maintenanceCommand);
 client.commands.set("eval", evalCommand);
 client.commands.set("reload", reloadCommand);
