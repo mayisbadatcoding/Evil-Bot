@@ -95,15 +95,15 @@ function startOAuthServer(client) {
             const robloxUserId = String(robloxUser.sub);
             const robloxUsername = robloxUser.preferred_username || robloxUser.name || "Unknown";
 
-            await linkRobloxAccount(
-    savedState.discord_user_id,
-    member.user.tag,
-    robloxUserId,
+        const guild = await client.guilds.fetch(savedState.guild_id);
+        const member = await guild.members.fetch(savedState.discord_user_id);
+
+                   await linkRobloxAccount(
+                   savedState.discord_user_id,
+                  member.user.tag,
+                 robloxUserId,
     robloxUsername
 );
-            const guild = await client.guilds.fetch(savedState.guild_id);
-            const member = await guild.members.fetch(savedState.discord_user_id);
-
             const rank = await getUserRank(Number(robloxUserId));
             const roleId = getDiscordRoleFromRank(rank);
 
