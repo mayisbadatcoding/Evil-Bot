@@ -56,6 +56,8 @@ const musicRemoveCommand = require("./commands/music/remove");
 const jumpCommand = require("./commands/music/jump");
 const autoplayCommand = require("./commands/music/autoplay");
 
+const massNickCommand = require("./commands/utility/massnick");
+
 const healthCommand = require("./commands/utility/health");
 const dbStatsCommand = require("./commands/utility/dbstats");
 const memoryCommand = require("./commands/utility/memory");
@@ -92,6 +94,7 @@ const commands = [
     musicRemoveCommand.data.toJSON(),
     jumpCommand.data.toJSON(),
     autoplayCommand.data.toJSON(),
+    massNickCommand.data.toJSON(),
 
     clankerCommand.data.toJSON(),
     fuckyouCommand.data.toJSON(),
@@ -138,13 +141,24 @@ const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
     try {
         console.log("Started refreshing slash commands.");
 
-        await rest.put(
-            Routes.applicationGuildCommands(
-                process.env.CLIENT_ID,
-                process.env.GUILD_ID
-            ),
-            { body: commands }
-        );
+const guildIds = [
+    process.env.GUILD_ID,
+    "1457695660882268334"
+];
+
+for (const guildId of guildIds) {
+    console.log(`Deploying commands to guild ${guildId}...`);
+
+    await rest.put(
+        Routes.applicationGuildCommands(
+            process.env.CLIENT_ID,
+            guildId
+        ),
+        { body: commands }
+    );
+
+    console.log(`Successfully deployed commands to guild ${guildId}.`);
+}
 
         console.log("Successfully registered slash commands.");
     } catch (error) {

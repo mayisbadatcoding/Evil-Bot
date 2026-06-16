@@ -37,6 +37,7 @@ const {
 const addCommand = require("./commands/point/add");
 const removeCommand = require("./commands/point/remove");
 const checkerCommand = require("./commands/point/checker");
+const massNickCommand = require("./commands/utility/massnick");
 
 const prereleaseCommand = require("./commands/prerelease/prerelease");
 const customRoleCommand = require("./commands/fun/customrole");
