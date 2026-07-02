@@ -9,13 +9,10 @@ function normalizeQuery(input) {
         .replace(/^song:\s*/i, "")
         .trim();
 
-    query = query.replace("https://music.youtube.com/", "https://www.youtube.com/");
-
-    const isUrl = /^https?:\/\//i.test(query);
-
-    if (!isUrl) {
-        query = `ytsearch:${query}`;
-    }
+    query = query.replace(
+        "https://music.youtube.com/",
+        "https://www.youtube.com/"
+    );
 
     return query;
 }
@@ -32,8 +29,14 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        const rawQuery = interaction.options.getString("song");
-        const query = normalizeQuery(rawQuery);
+  const rawQuery = interaction.options.getString("song");
+let query = normalizeQuery(rawQuery);
+
+const isUrl = /^https?:\/\//i.test(query);
+
+if (!isUrl) {
+    query = `scsearch:${query}`;
+}
         const voiceChannel = interaction.member.voice.channel;
 
         if (!voiceChannel) {
@@ -57,13 +60,12 @@ module.exports = {
 
             console.log("Lavalink search query:", query);
 
-            const result = await player.search(
-                {
-                    query,
-                    source: "youtube"
-                },
-                interaction.user
-            );
+const result = await player.search(
+    {
+        query
+    },
+    interaction.user
+);
 
             console.log("Lavalink load result:", {
                 loadType: result?.loadType,
