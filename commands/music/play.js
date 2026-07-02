@@ -35,7 +35,7 @@ let query = normalizeQuery(rawQuery);
 const isUrl = /^https?:\/\//i.test(query);
 
 if (!isUrl) {
-    query = `scsearch:${query}`;
+    query = `ytsearch:${query}`;
 }
         const voiceChannel = interaction.member.voice.channel;
 
