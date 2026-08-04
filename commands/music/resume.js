@@ -1,0 +1,14 @@
+const { SlashCommandBuilder } = require("discord.js");
+const { getPlayer } = require("../../utils/musicHelpers");
+
+module.exports = {
+    data: new SlashCommandBuilder().setName("resume").setDescription("Resume playback."),
+
+    async execute(interaction) {
+        const player = getPlayer(interaction.client, interaction.guildId);
+        if (!player) return interaction.reply({ content: "Nothing is playing.", flags: 64 });
+
+        await player.resume();
+        await interaction.reply("Resumed.");
+    }
+};
