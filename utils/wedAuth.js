@@ -21,7 +21,12 @@ async function sessionMiddleware(req,res,next){
   if(req.user) await q('UPDATE wed_sessions SET last_seen_at=NOW() WHERE token_hash=$1',[hash(raw)]);
   next();
 }
-function requireLogin(req,res,next){ if(!req.user) return res.redirect('/login'); if(req.user.access_state==='hiatus'||req.user.access_state==='no_access') return res.status(403).send('Your WED portal access is disabled while you are on hiatus. Contact Development Leadership to return.'); next(); }
+function requireLogin(req,res,next){
+  if(!req.user) return res.redirect('/login');
+  if(req.user.access_state==='no_access') return res.redirect('/access-removed');
+  if(req.user.access_state==='hiatus') return res.status(403).send('Your WED portal access is disabled while your hiatus role is active. Contact WED Leadership when you return.');
+  next();
+}
 function requireRole(minRole){ return (req,res,next)=>{ if(!req.user || (ROLE_ORDER[req.user.department_role]||0)<(ROLE_ORDER[minRole]||0)) return res.status(403).send('Access denied.'); next(); }; }
 async function logout(req,res){ const raw=parseCookies(req).wed_session; if(raw) await q('DELETE FROM wed_sessions WHERE token_hash=$1',[hash(raw)]); res.setHeader('Set-Cookie',`wed_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secureCookie()}`); }
 module.exports={ROLE_ORDER,sessionMiddleware,requireLogin,requireRole,createSession,logout,hash};

@@ -88,13 +88,6 @@ function requireSecretaryPlus(req, res, next) {
   next();
 }
 
-const ADMIN_USER_IDS = new Set([
-  "1262179224660217948",
-  "1092162323021566103",
-  "862405092111548417",
-  "690720906590552094"
-]);
-
 function isAdministrator(user) {
   return Boolean(user && ADMIN_USER_IDS.has(String(user.discord_user_id)));
 }
@@ -179,6 +172,13 @@ function badge(status) {
   return `<span class="badge badge-${esc(normalized)}">${esc(pretty(normalized))}</span>`;
 }
 
+const ADMIN_USER_IDS = new Set([
+  "1262179224660217948",
+  "1092162323021566103",
+  "862405092111548417",
+  "690720906590552094"
+]);
+
 function roleFromMember(member, userId) {
   const ids = new Set(member.roles || []);
 
@@ -204,12 +204,15 @@ function roleFromMember(member, userId) {
   else if (ids.has(ROLE_IDS.contractor)) role = "contractor";
   else if (userId === ROLE_IDS.botDeveloper) [role, team] = ["bot_developer", "Bot Development"];
 
-  const recognized = role !== "staff" || ids.has(ROLE_IDS.contractor);
+  const leadershipAccess = ["team_lead", "secretary", "director", "executive", "bot_developer"].includes(role)
+    || ADMIN_USER_IDS.has(String(userId));
   const accessState = ids.has(ROLE_IDS.suspended)
     ? "suspended"
-    : recognized
-      ? "active"
-      : "no_access";
+    : ids.has(ROLE_IDS.hiatus)
+      ? "hiatus"
+      : leadershipAccess
+        ? "active"
+        : "no_access";
 
   return { role, team, accessState };
 }
@@ -944,10 +947,11 @@ function startWedServer(client) {
     const body = `
       ${pageTitle("The portal has changed", "WED STAFF NOTICE", "General staff access to the WED Portal has been retired.")}
       <section class="panel prose">
-        <h2>Thank you for everything you contribute.</h2>
-        <p>This portal is now reserved for WED leadership and administrative work. This change does not affect your position, standing, or value to the department.</p>
-        <p>Staff services, including leave requests, are now handled through Discord commands. Leadership remains available if you believe you should have portal access or need help with a staff process.</p>
-        <p>We know changes like this can feel abrupt. This was an operational decision, not a reflection on our staff.</p>
+        <h2>Thank you for everything you contribute to WED.</h2>
+        <p>We have changed the WED Portal into a dedicated leadership and administrative workspace. As part of that change, general staff access has been removed.</p>
+        <p>This does not affect your position, standing, or value to the department. Staff services, including leave requests, are now available through Discord commands.</p>
+        <p>We appreciate the work you do and understand that a change like this may feel abrupt. It is an operational change only. Leadership is available if you believe you should have access or need assistance.</p>
+        <div class="actions"><a class="button primary" href="https://discord.com/channels/${WED_GUILD_ID}">Return to Discord</a></div>
       </section>`;
     res.send(layout("Portal access changed", body, req.user));
   });
@@ -1009,34 +1013,32 @@ function startWedServer(client) {
 
   app.get("/", (req, res) => {
     const body = `
-      <section class="hero">
+      <section class="hero leadership-hero">
         <div class="hero-copy">
-          <p class="eyebrow">WED OPERATIONS</p>
-          <h1>One portal for the work behind the work.</h1>
-          <p>A dedicated leadership workspace for staff oversight, leave decisions, discipline, payroll, and administration.</p>
+          <p class="eyebrow">WED LEADERSHIP OPERATIONS</p>
+          <h1>The administrative center for WED leadership.</h1>
+          <p>Review staff records, leave requests, discipline, payroll, and the operational decisions that keep the department functioning.</p>
           <div class="actions">
-            <a class="button primary" href="${req.user ? "/dashboard" : "/login"}">${req.user ? "Open dashboard" : "Staff login"}</a>
-            <a class="button ghost" href="/apply">Apply to WED</a>
+            <a class="button primary" href="${req.user ? "/dashboard" : "/login"}">${req.user ? "Open leadership portal" : "Leadership login"}</a>
           </div>
         </div>
         <div class="hero-panel">
-          <span>Operations Coverage</span>
-          <strong>9 systems</strong>
+          <span>Portal access</span>
+          <strong>Leadership only</strong>
           <ul>
-            <li>Role-based access</li>
-            <li>Discord authentication</li>
-            <li>Audit-ready records</li>
-            <li>Automated staff synchronization</li>
+            <li>Administration</li>
+            <li>Directors and Central Leadership</li>
+            <li>Secretaries and Team Leads</li>
           </ul>
         </div>
       </section>
       <section class="feature-grid">
-        <article><span>01</span><h2>Build</h2><p>Record development work, evidence, hours, and QC handoffs.</p></article>
-        <article><span>02</span><h2>Review</h2><p>Handle applications, investigations, discipline, and appeals cleanly.</p></article>
-        <article><span>03</span><h2>Operate</h2><p>Review leave, access states, staff records, and leadership activity.</p></article>
+        <article><span>01</span><h2>Oversee</h2><p>Keep staff records, roles, and department status organized.</p></article>
+        <article><span>02</span><h2>Decide</h2><p>Review leave, disciplinary matters, and pending leadership actions.</p></article>
+        <article><span>03</span><h2>Operate</h2><p>Manage payroll, audit history, and administrative controls.</p></article>
       </section>
     `;
-    res.send(layout("Operations Portal", body, req.user, "home"));
+    res.send(layout("Leadership Operations Portal", body, req.user, "home"));
   });
 
   app.get("/login", async (req, res) => {
@@ -1179,17 +1181,6 @@ function startWedServer(client) {
 
       if (access.accessState === "no_access") {
         return res.redirect("/access-removed");
-        const reportCount = await q(
-          `SELECT COUNT(*) FROM wed_ia_case_settings
-           WHERE subject_discord_id=$1 AND public_status='published'`,
-          [discordUser.id]
-        );
-
-        if (Number(reportCount.rows[0].count) > 0) {
-          return res.redirect("/my-reports");
-        }
-
-        return res.status(403).send("You do not have a WED portal access role.");
       }
 
       res.redirect("/dashboard");
@@ -1271,92 +1262,70 @@ function startWedServer(client) {
     res.send(layout("Access Suspended", body, req.user, "suspended"));
   });
 
-  app.get("/dashboard", requireLogin, async (req, res) => {
-    const [development, pendingQc, applications, investigations, punishments, leave] =
-      await Promise.all([
-        q("SELECT COUNT(*) FROM wed_development_logs"),
-        q("SELECT COUNT(*) FROM wed_qc_handoffs WHERE result='pending'"),
-        q("SELECT COUNT(*) FROM wed_applications WHERE status NOT IN ('accepted','denied','withdrawn')"),
-        q("SELECT COUNT(*) FROM wed_background_checks WHERE status IN ('draft','awaiting_review')"),
-        q("SELECT COUNT(*) FROM wed_punishments WHERE status='pending'"),
-        q("SELECT COUNT(*) FROM wed_leave_requests WHERE status IN ('pending','approved','active')")
-      ]);
-
-    let activity = "";
-
-    if (isAdministrator(req.user)) {
-      const recent = await q(`
-        SELECT 'Development' AS area, summary AS title, created_at AS happened_at
-        FROM wed_development_logs
-        UNION ALL
-        SELECT 'Application', discord_username || ' applied for ' || position, created_at
-        FROM wed_applications
-        UNION ALL
-        SELECT 'Internal Affairs', 'IA-' || id || ' — ' || status, created_at
-        FROM wed_background_checks
-        ORDER BY happened_at DESC
+  app.get("/dashboard", requireLogin, requireTeamLeadPlus, async (req, res) => {
+    const [staff, pendingLeave, activeLeave, pendingDiscipline, openPayCycles, recentAudit] = await Promise.all([
+      q("SELECT COUNT(*) FROM wed_users WHERE active=TRUE"),
+      q("SELECT COUNT(*) FROM wed_leave_requests WHERE status='pending'"),
+      q("SELECT COUNT(*) FROM wed_leave_requests WHERE status IN ('approved','active')"),
+      q("SELECT COUNT(*) FROM wed_punishments WHERE status='pending'"),
+      q("SELECT COUNT(*) FROM wed_pay_cycles WHERE status <> 'finalized'"),
+      q(`
+        SELECT action,entity_type,entity_id,created_at
+        FROM wed_audit_log
+        ORDER BY created_at DESC
         LIMIT 8
-      `);
+      `)
+    ]);
 
-      activity = recent.rows.map(item => `
-        <article class="activity-item">
-          <div>
-            <span>${esc(item.area)}</span>
-            <strong>${esc(item.title)}</strong>
-          </div>
-          <time>${esc(dateTime(item.happened_at))}</time>
-        </article>
-      `).join("");
-    }
+    const activity = recentAudit.rows.map(item => `
+      <article class="activity-item">
+        <div>
+          <span>${esc(pretty(item.entity_type))}</span>
+          <strong>${esc(pretty(item.action))}${item.entity_id ? ` · #${esc(item.entity_id)}` : ""}</strong>
+        </div>
+        <time>${esc(dateTimeInZone(item.created_at, req.user.timezone || "UTC"))}</time>
+      </article>
+    `).join("");
 
     const body = `
       ${flash(req)}
       ${pageTitle(
         `Welcome back, ${req.user.display_name || req.user.discord_username}`,
-        "COMMAND CENTER",
+        "LEADERSHIP COMMAND CENTER",
         `${pretty(req.user.department_role)}${req.user.team ? ` · ${req.user.team}` : ""}`
       )}
-      <section class="metrics-grid">
-        ${metric("Development logs", development.rows[0].count)}
-        ${metric("QC awaiting review", pendingQc.rows[0].count)}
-        ${metric("Open applications", applications.rows[0].count)}
-        ${metric("IA awaiting review", investigations.rows[0].count)}
-        ${metric("Pending discipline", punishments.rows[0].count)}
-        ${metric("Active leave items", leave.rows[0].count)}
+      <section class="metrics-grid leadership-metrics">
+        ${metric("Active staff records", staff.rows[0].count, "Department-wide")}
+        ${metric("Leave awaiting review", pendingLeave.rows[0].count, "Needs a decision")}
+        ${metric("Approved or active leave", activeLeave.rows[0].count, "Current availability")}
+        ${metric("Pending discipline", pendingDiscipline.rows[0].count, "Awaiting leadership")}
+        ${metric("Open pay cycles", openPayCycles.rows[0].count, "Draft or active")}
       </section>
       <section class="dashboard-grid">
         <div class="panel">
           <div class="section-heading">
-            <div><p class="eyebrow">QUICK ACTIONS</p><h2>Start something</h2></div>
+            <div><p class="eyebrow">LEADERSHIP WORKSPACE</p><h2>Priority areas</h2></div>
           </div>
           <div class="quick-grid">
-            <a href="/development/new"><strong>New development log</strong><span>Record completed work and evidence.</span></a>
-            <a href="/background-checks/new"><strong>Open IA case</strong><span>Start a background check or investigation.</span></a>
-            <a href="/punishments"><strong>Discipline</strong><span>Issue, review, or approve actions.</span></a>
-            <a href="/loa"><strong>Leave management</strong><span>Review Discord-submitted staff leave requests.</span></a>
+            <a href="/loa"><strong>Leave management</strong><span>Approve, deny, and manage staff returns.</span></a>
+            <a href="/staff-management"><strong>Staff management</strong><span>Review staff status, roles, and records.</span></a>
+            <a href="/punishments"><strong>Discipline</strong><span>Review and manage disciplinary actions.</span></a>
+            <a href="/pay"><strong>Payroll</strong><span>Manage pay cycles, eligibility, and payouts.</span></a>
+            ${isAdministrator(req.user) ? `<a href="/administration"><strong>Administration</strong><span>System controls, privacy requests, and audit tools.</span></a>` : ""}
           </div>
         </div>
-        ${isAdministrator(req.user) ? `
-          <div class="panel">
-            <div class="section-heading">
-              <div><p class="eyebrow">ADMINISTRATIVE ACTIVITY</p><h2>What changed</h2></div>
-            </div>
-            <div class="activity-feed">
-              ${activity || `<p class="muted">No recent activity.</p>`}
-            </div>
+        <div class="panel">
+          <div class="section-heading">
+            <div><p class="eyebrow">RECENT ACTIVITY</p><h2>Leadership record</h2></div>
           </div>
-        ` : `
-          <div class="panel">
-            <div class="section-heading">
-              <div><p class="eyebrow">YOUR PORTAL</p><h2>Department workspace</h2></div>
-            </div>
-            <p class="muted">Use the navigation above to access the tools and records available to your role.</p>
+          <div class="activity-feed">
+            ${activity || `<p class="muted">No recent leadership activity.</p>`}
           </div>
-        `}
+        </div>
       </section>
     `;
 
-    res.send(layout("Dashboard", body, req.user, "dashboard"));
+    res.send(layout("Leadership Dashboard", body, req.user, "dashboard"));
   });
 
   app.get("/development", requireLogin, async (req, res) => {
@@ -1710,17 +1679,17 @@ function startWedServer(client) {
   }
 
   async function processDueLeaves() {
-    const due = (
+    const starting = (
       await q(`
         SELECT l.*,u.discord_role_ids
         FROM wed_leave_requests l
         JOIN wed_users u ON u.discord_user_id=l.user_id
         WHERE l.status='approved'
-          AND l.starts_at<=CURRENT_DATE
+          AND COALESCE(l.starts_at_utc, l.starts_at::timestamp) <= NOW()
       `)
     ).rows;
 
-    for (const leave of due) {
+    for (const leave of starting) {
       try {
         let previous = [];
 
@@ -1736,14 +1705,11 @@ function startWedServer(client) {
           );
         }
 
-        await q(
-          `
+        await q(`
           UPDATE wed_leave_requests
           SET status='active',previous_role_ids=$1,activated_at=NOW()
-          WHERE id=$2
-          `,
-          [JSON.stringify(previous), leave.id]
-        );
+          WHERE id=$2 AND status='approved'
+        `, [JSON.stringify(previous), leave.id]);
 
         await audit(null, "activate", "leave_request", leave.id, {
           automatic: true,
@@ -1751,6 +1717,45 @@ function startWedServer(client) {
         });
       } catch (error) {
         console.error(`Could not activate leave ${leave.id}:`, error);
+      }
+    }
+
+    const ending = (
+      await q(`
+        SELECT *
+        FROM wed_leave_requests
+        WHERE status IN ('approved','active')
+          AND COALESCE(expected_return_at_utc, expected_return_at::timestamp) <= NOW()
+      `)
+    ).rows;
+
+    for (const leave of ending) {
+      try {
+        if (leave.requires_hiatus) {
+          await changeMemberRoles(leave.user_id, {
+            remove: [ROLE_IDS.hiatus],
+            add: leave.previous_role_ids || []
+          });
+          await q(
+            "UPDATE wed_users SET access_state='no_access',active=TRUE WHERE discord_user_id=$1",
+            [leave.user_id]
+          );
+        }
+
+        const closed = await q(`
+          UPDATE wed_leave_requests
+          SET status='returned',returned_at=NOW()
+          WHERE id=$1 AND status IN ('approved','active')
+          RETURNING id
+        `, [leave.id]);
+
+        if (!closed.rows[0]) continue;
+
+        await audit(null, "return", "leave_request", leave.id, { automatic: true });
+        await sendLeaveChannelMessage(`🎉 Welcome back, <@${leave.user_id}>! Your approved leave has ended. We are glad to have you back.`);
+        notify(client, "Staff returned from leave", `Leave request #${leave.id} ended automatically.`);
+      } catch (error) {
+        console.error(`Could not close leave ${leave.id}:`, error);
       }
     }
   }

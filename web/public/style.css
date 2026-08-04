@@ -3533,3 +3533,10 @@ td code,
     color: #333;
   }
 }
+
+
+/* Leadership-only portal additions */
+.leadership-hero .hero-panel strong { font-size: clamp(1.8rem, 4vw, 3.4rem); }
+.leadership-metrics { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.timezone-confirm { border-left: 4px solid var(--gold, #b8944f); }
+.prose .actions { margin-top: 1.5rem; }
